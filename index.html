@@ -1901,6 +1901,22 @@ function renderStatistikPage() {
           </div>
           <div id="doughnut-legend" style="display: flex; flex-direction: column; gap: 6px; margin-top: 16px; font-size: 10px;"></div>
         </div>
+
+        <!-- Telegram Reporting Action Card -->
+        <div class="card" style="${state.telegram && state.telegram.enabled && state.telegram.token && state.telegram.chatId ? '' : 'opacity: 0.65;'}">
+          <div class="card-header" style="margin-bottom: 12px;">
+            <div class="card-title" style="font-size: 14px; font-weight: 700; color: var(--gold); display: flex; align-items: center; gap: 8px;">
+              <i class="ti ti-brand-telegram" style="font-size: 18px;"></i>
+              Laporan Telegram Bot
+            </div>
+          </div>
+          <p style="font-size: 12px; color: var(--text2); line-height: 1.5; margin-bottom: 16px;">
+            Kirimkan ringkasan laporan keuangan real-time lengkap ke chat Telegram Anda secara otomatis.
+          </p>
+          <button class="btn-save" onclick="sendFinancialReportToTelegram()" style="width: 100%; padding: 12px; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px; border: none; cursor: pointer; background: var(--gold); color: #111; border-radius: var(--radius-sm);">
+            <i class="ti ti-send"></i> Kirim Laporan ke Telegram
+          </button>
+        </div>
       </div>
     </div>
   `;
@@ -2481,6 +2497,70 @@ function showTelegramStatus(msg, type) {
   setTimeout(() => {
     el.style.display = 'none';
   }, 5000);
+}
+
+async function sendFinancialReportToTelegram() {
+  if (!state.telegram || !state.telegram.token || !state.telegram.chatId) {
+    showNotification('Konfigurasi Telegram Anda belum lengkap di tab Pengaturan!', 'error');
+    return;
+  }
+  
+  const stats = getStats();
+  const dateObj = new Date();
+  const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+  const dateStr = `${dateObj.getDate()} ${monthNames[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
+  
+  let reportText = `📊 <b>LAPORAN RINGKASAN KEUANGAN KEUANGANKU</b>\n` +
+                   `📅 <i>Tanggal Cetak: ${dateStr}</i>\n\n` +
+                   `━━━━━━━━━━━━━━━━━━━\n\n` +
+                   `🟢 <b>Total Pemasukan:</b>\n   <code>${rp(stats.income)}</code>\n\n` +
+                   `🔴 <b>Total Pengeluaran:</b>\n   <code>${rp(stats.expense)}</code>\n\n` +
+                   `💳 <b>Sisa Saldo Bersih:</b>\n   <code>${rp(stats.saldo)}</code>\n\n` +
+                   `━━━━━━━━━━━━━━━━━━━\n\n` +
+                   `📈 <b>Status Anggaran Kategori:</b>\n`;
+                   
+  let budgetList = '';
+  Object.keys(state.budgets).forEach(cat => {
+    const limit = state.budgets[cat].limit;
+    let spent = 0;
+    state.transactions.forEach(t => {
+      if (t.type === 'expense' && t.cat === cat) {
+        spent += t.amount;
+      }
+    });
+    const pct = limit > 0 ? Math.round((spent / limit) * 100) : 0;
+    budgetList += `• <b>${cat}</b>: <code>${rp(spent)}</code> / ${rp(limit)} (${pct}%)\n`;
+  });
+  
+  if (budgetList) {
+    reportText += budgetList + '\n';
+  } else {
+    reportText += `<i>(Belum ada anggaran kategori ditentukan)</i>\n\n`;
+  }
+  
+  reportText += `🐷 <b>Celengan Impian Aktif:</b>\n`;
+  let savingsList = '';
+  state.savings.forEach(s => {
+    const pct = Math.min(Math.round((s.terkumpul / s.target) * 100), 100);
+    savingsList += `• <b>${s.nama}</b>: <code>${rp(s.terkumpul)}</code> / ${rp(s.target)} (${pct}%)\n`;
+  });
+  
+  if (savingsList) {
+    reportText += savingsList + '\n';
+  } else {
+    reportText += `<i>(Belum ada celengan impian dibuat)</i>\n\n`;
+  }
+  
+  reportText += `━━━━━━━━━━━━━━━━━━━\n\n` +
+                 `<i>Laporan dikirim instan dari Aplikasi KeuanganKu Cloud.</i>`;
+  
+  showNotification('Sedang mengirim laporan ke Telegram...', 'success');
+  const res = await sendTelegramMessage(reportText);
+  if (res.ok) {
+    showNotification('Laporan Keuangan berhasil dikirim ke Telegram! 📲');
+  } else {
+    showNotification('Gagal mengirim laporan ke Telegram. Periksa token Anda.', 'error');
+  }
 }
 
 async function sendTelegramMessage(text) {
