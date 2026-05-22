@@ -338,6 +338,59 @@
   @keyframes scaleUp { from { transform: scale(0.92); opacity: 0; } to { transform: scale(1); opacity: 1; } }
   .txn-item { animation: slideIn 0.25s ease both; }
 
+  /* Custom Modal Theme Styles */
+  .custom-modal-card {
+    width: 92%;
+    max-width: 400px;
+    padding: 24px;
+    border-radius: var(--radius);
+    background: #18181B;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+    transform: scale(0.92);
+    opacity: 0;
+    animation: scaleUp 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+  .light .custom-modal-card {
+    background: #FFFFFF;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.12);
+  }
+  .custom-modal-title {
+    font-size: 16px;
+    font-weight: 800;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .custom-modal-message {
+    font-size: 13.5px;
+    line-height: 1.6;
+    margin-bottom: 24px;
+    color: var(--text2);
+  }
+  .light .custom-modal-message {
+    color: #475569;
+  }
+  .custom-modal-btn-cancel {
+    padding: 10px 18px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    transition: all var(--transition);
+  }
+  .custom-modal-btn-cancel:hover {
+    background: rgba(255, 255, 255, 0.06);
+  }
+  .light .custom-modal-btn-cancel:hover {
+    background: rgba(0, 0, 0, 0.04);
+  }
+
   /* Mobile Bottom Navigation Bar Styles */
   .mobile-nav {
     display: none;
@@ -2674,8 +2727,8 @@ function showCustomPrompt({ title, placeholder, value = '', isNumeric = false })
     `;
     
     overlay.innerHTML = `
-      <div class="card" style="transform: scale(0.92); opacity: 0; animation: scaleUp 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; width: 92%; max-width: 400px; padding: 24px; border: 1px solid var(--border-hover); background: var(--bg2); box-shadow: 0 20px 40px rgba(0,0,0,0.4); border-radius: var(--radius-md);">
-        <div style="font-size: 15px; font-weight: 800; color: var(--gold); margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+      <div class="custom-modal-card">
+        <div class="custom-modal-title" style="color: var(--gold);">
           <i class="ti ti-help-circle" style="font-size: 18px;"></i>
           ${title}
         </div>
@@ -2683,8 +2736,8 @@ function showCustomPrompt({ title, placeholder, value = '', isNumeric = false })
           <input type="${isNumeric ? 'number' : 'text'}" id="custom-prompt-input" class="form-input" placeholder="${placeholder}" style="font-size: 14px; font-weight: 500; width: 100%; box-sizing: border-box;" />
         </div>
         <div class="modal-actions" style="display: flex; gap: 12px; justify-content: flex-end;">
-          <button class="btn-cancel" id="custom-prompt-cancel" style="padding: 10px 18px; font-size: 12px; font-weight: 600; cursor: pointer; border-radius: var(--radius-sm);">Batal</button>
-          <button class="btn-save" id="custom-prompt-ok" style="padding: 10px 20px; font-size: 12px; font-weight: 700; cursor: pointer; border-radius: var(--radius-sm); background: var(--gold); color: #111; display: flex; align-items: center; gap: 6px;">
+          <button class="custom-modal-btn-cancel" id="custom-prompt-cancel">Batal</button>
+          <button class="btn-save" id="custom-prompt-ok" style="padding: 10px 20px; font-size: 12px; font-weight: 700; cursor: pointer; border-radius: var(--radius-sm); background: var(--gold); color: #111; display: flex; align-items: center; gap: 6px; border: none;">
             Oke
           </button>
         </div>
@@ -2741,17 +2794,17 @@ function showCustomConfirm({ title, message }) {
     `;
     
     overlay.innerHTML = `
-      <div class="card" style="transform: scale(0.92); opacity: 0; animation: scaleUp 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; width: 92%; max-width: 400px; padding: 24px; border: 1px solid var(--border-hover); background: var(--bg2); box-shadow: 0 20px 40px rgba(0,0,0,0.4); border-radius: var(--radius-md);">
-        <div style="font-size: 15px; font-weight: 800; color: #FF5C5C; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+      <div class="custom-modal-card">
+        <div class="custom-modal-title" style="color: #FF5C5C;">
           <i class="ti ti-alert-triangle" style="font-size: 20px;"></i>
           ${title}
         </div>
-        <div style="font-size: 13px; color: var(--text2); line-height: 1.6; margin-bottom: 24px;">
+        <div class="custom-modal-message">
           ${message}
         </div>
         <div class="modal-actions" style="display: flex; gap: 12px; justify-content: flex-end;">
-          <button class="btn-cancel" id="custom-confirm-cancel" style="padding: 10px 18px; font-size: 12px; font-weight: 600; cursor: pointer; border-radius: var(--radius-sm);">Batal</button>
-          <button class="btn-save" id="custom-confirm-ok" style="padding: 10px 20px; font-size: 12px; font-weight: 700; cursor: pointer; border-radius: var(--radius-sm); background: #FF5C5C; color: #fff; box-shadow: 0 4px 12px rgba(255, 92, 92, 0.2); display: flex; align-items: center; gap: 6px;">
+          <button class="custom-modal-btn-cancel" id="custom-confirm-cancel">Batal</button>
+          <button class="btn-save" id="custom-confirm-ok" style="padding: 10px 20px; font-size: 12px; font-weight: 700; cursor: pointer; border-radius: var(--radius-sm); background: #FF5C5C; color: #fff; box-shadow: 0 4px 12px rgba(255, 92, 92, 0.2); display: flex; align-items: center; gap: 6px; border: none;">
             Hapus
           </button>
         </div>
