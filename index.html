@@ -2601,17 +2601,26 @@ function startTelegramBotListener() {
     clearInterval(window.tgListenerInterval);
   }
   
-  fetch(`https://api.telegram.org/bot${state.telegram.token}/getUpdates?limit=1`)
+  // 1. Force delete any webhook conflict to guarantee getUpdates works!
+  fetch(`https://api.telegram.org/bot${state.telegram.token}/deleteWebhook`)
+    .then(() => {
+      // 2. Fetch the latest update history to initialize offset
+      return fetch(`https://api.telegram.org/bot${state.telegram.token}/getUpdates?limit=100`);
+    })
     .then(res => res.json())
     .then(data => {
       if (data.ok && data.result.length > 0) {
-        tgLastUpdateId = data.result[0].update_id;
+        // Set to the absolute newest message in queue to skip old testing spam
+        tgLastUpdateId = data.result[data.result.length - 1].update_id;
+      } else {
+        tgLastUpdateId = 0;
       }
-      window.tgListenerInterval = setInterval(checkTelegramCommands, 4500);
+      // Poll fresh updates every 3.5 seconds
+      window.tgListenerInterval = setInterval(checkTelegramCommands, 3500);
     })
     .catch(err => {
       console.error("Failed to init TG updates listener:", err);
-      // fallback start anyway
+      // Fallback
       window.tgListenerInterval = setInterval(checkTelegramCommands, 5000);
     });
 }
