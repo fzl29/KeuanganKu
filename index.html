@@ -3,6 +3,8 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8" />
+<!-- Supabase Client SDK CDN -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Keuanganku - Manajemen Keuangan Pribadi</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -963,6 +965,12 @@ const defaultState = {
     enabled: false,
     token: '',
     chatId: ''
+  },
+  supabase: {
+    enabled: false,
+    url: '',
+    key: '',
+    syncCode: ''
   }
 };
 
@@ -973,6 +981,14 @@ if (!state.telegram) {
     enabled: false,
     token: '',
     chatId: ''
+  };
+}
+if (!state.supabase) {
+  state.supabase = {
+    enabled: false,
+    url: '',
+    key: '',
+    syncCode: ''
   };
 }
 
@@ -988,6 +1004,9 @@ let currentPage = 'dashboard';
 
 function saveState() {
   localStorage.setItem('kasirku_state', JSON.stringify(state));
+  if (state.supabase && state.supabase.enabled) {
+    syncToSupabase();
+  }
 }
 
 function applyTheme() {
@@ -2127,89 +2146,179 @@ function renderPengaturanPage() {
   if (!content) return;
   
   content.innerHTML = `
-    <div class="two-col" style="grid-template-columns: 1fr 360px;">
-      <!-- Left Side: Config Card -->
-      <div class="card">
-        <div class="card-header" style="margin-bottom: 24px;">
-          <div class="card-title" style="font-size: 15px; font-weight: 700; color: var(--gold); display: flex; align-items: center; gap: 8px;">
-            <i class="ti ti-brand-telegram" style="font-size: 20px;"></i>
-            Integrasi Bot Telegram
-          </div>
-        </div>
+    <div class="two-col" style="grid-template-columns: 1fr 360px; gap: 20px;">
+      
+      <!-- Left Column: Settings Cards -->
+      <div style="display: flex; flex-direction: column; gap: 20px;">
         
-        <div class="form-group" style="margin-bottom: 20px;">
-          <label class="form-label" style="font-weight: 600;">Status Integrasi</label>
-          <div style="display: flex; align-items: center; justify-content: space-between; background: var(--bg3); padding: 12px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border);">
-            <span style="font-size: 13px; color: var(--text);">Kirim Notifikasi Transaksi Otomatis</span>
-            <button class="theme-toggle" onclick="toggleTelegramEnabled()" style="width: auto; background: transparent; border: none; padding: 0; cursor: pointer;">
-              <div class="toggle-pill ${state.telegram.enabled ? 'on' : ''}" id="tg-toggle-pill" style="margin-left: auto;">
-                <div class="toggle-dot"></div>
-              </div>
+        <!-- Telegram Bot integration Card -->
+        <div class="card" style="margin-top: 0;">
+          <div class="card-header" style="margin-bottom: 24px;">
+            <div class="card-title" style="font-size: 15px; font-weight: 700; color: var(--gold); display: flex; align-items: center; gap: 8px;">
+              <i class="ti ti-brand-telegram" style="font-size: 20px;"></i>
+              Integrasi Bot Telegram
+            </div>
+          </div>
+          
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label class="form-label" style="font-weight: 600;">Status Integrasi</label>
+            <div style="display: flex; align-items: center; justify-content: space-between; background: var(--bg3); padding: 12px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+              <span style="font-size: 13px; color: var(--text);">Kirim Notifikasi Transaksi Otomatis</span>
+              <button class="theme-toggle" onclick="toggleTelegramEnabled()" style="width: auto; background: transparent; border: none; padding: 0; cursor: pointer;">
+                <div class="toggle-pill ${state.telegram.enabled ? 'on' : ''}" id="tg-toggle-pill" style="margin-left: auto;">
+                  <div class="toggle-dot"></div>
+                </div>
+              </button>
+            </div>
+          </div>
+          
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label class="form-label" for="tg-token" style="font-weight: 600;">Token Bot Telegram</label>
+            <div style="position: relative; display: flex; gap: 8px;">
+              <input class="form-input" type="password" id="tg-token" value="${state.telegram.token || ''}" placeholder="cth: 123456:ABC-DEF1234ghIkl-zyx" style="padding-right: 40px; flex: 1;"/>
+              <button onclick="toggleTokenVisibility()" class="btn-cancel" style="flex: 0 0 45px; display: flex; align-items: center; justify-content: center; padding: 0; border-radius: var(--radius-sm);" title="Tampilkan/Sembunyikan Token">
+                <i class="ti ti-eye" id="tg-eye-icon"></i>
+              </button>
+            </div>
+          </div>
+          
+          <div class="form-group" style="margin-bottom: 24px;">
+            <label class="form-label" for="tg-chat-id" style="font-weight: 600;">Chat ID Penerima</label>
+            <input class="form-input" type="text" id="tg-chat-id" value="${state.telegram.chatId || ''}" placeholder="cth: 987654321"/>
+          </div>
+          
+          <div style="display: flex; gap: 12px;">
+            <button class="btn-save" onclick="saveTelegramSettings()" style="flex: 1; padding: 12px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+              <i class="ti ti-device-floppy"></i> Simpan Bot
+            </button>
+            <button class="btn-cancel" onclick="testTelegramConnection()" style="flex: 1; padding: 12px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+              <i class="ti ti-send"></i> Uji Kirim
             </button>
           </div>
+          
+          <div id="tg-status-message" style="margin-top: 16px; font-size: 12px; padding: 10px 14px; border-radius: var(--radius-sm); display: none;"></div>
         </div>
-        
-        <div class="form-group" style="margin-bottom: 20px;">
-          <label class="form-label" for="tg-token" style="font-weight: 600;">Token Bot Telegram</label>
-          <div style="position: relative; display: flex; gap: 8px;">
-            <input class="form-input" type="password" id="tg-token" value="${state.telegram.token || ''}" placeholder="cth: 123456:ABC-DEF1234ghIkl-zyx" style="padding-right: 40px; flex: 1;"/>
-            <button onclick="toggleTokenVisibility()" class="btn-cancel" style="flex: 0 0 45px; display: flex; align-items: center; justify-content: center; padding: 0; border-radius: var(--radius-sm);" title="Tampilkan/Sembunyikan Token">
-              <i class="ti ti-eye" id="tg-eye-icon"></i>
-            </button>
+
+        <!-- Supabase Cloud Sync Card -->
+        <div class="card">
+          <div class="card-header" style="margin-bottom: 24px;">
+            <div class="card-title" style="font-size: 15px; font-weight: 700; color: var(--gold); display: flex; align-items: center; gap: 8px;">
+              <i class="ti ti-cloud-computing" style="font-size: 20px;"></i>
+              Supabase Cloud Database Sync
+            </div>
           </div>
+
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label class="form-label" style="font-weight: 600;">Status Koneksi Awan</label>
+            <div style="display: flex; align-items: center; justify-content: space-between; background: var(--bg3); padding: 12px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+              <span style="font-size: 13px; color: var(--text);" id="sb-status-badge">
+                ${state.supabase.enabled ? '🟢 Cloud Terkoneksi (Real-time)' : '⚪ Lokal Only (Fallback)'}
+              </span>
+              <button class="theme-toggle" onclick="toggleSupabaseEnabled()" style="width: auto; background: transparent; border: none; padding: 0; cursor: pointer;">
+                <div class="toggle-pill ${state.supabase.enabled ? 'on' : ''}" id="sb-toggle-pill" style="margin-left: auto;">
+                  <div class="toggle-dot"></div>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label class="form-label" for="sb-url" style="font-weight: 600;">Supabase URL</label>
+            <input class="form-input" type="text" id="sb-url" value="${state.supabase.url || ''}" placeholder="cth: https://xyzexample.supabase.co"/>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label class="form-label" for="sb-key" style="font-weight: 600;">Supabase Anon Key / Publishable Key</label>
+            <input class="form-input" type="password" id="sb-key" value="${state.supabase.key || ''}" placeholder="sb_publishable_... atau anon key"/>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 24px;">
+            <label class="form-label" for="sb-code" style="font-weight: 600;">Sync Code (PIN Keamanan)</label>
+            <input class="form-input" type="text" id="sb-code" value="${state.supabase.syncCode || ''}" placeholder="cth: fzl29_keuangan_utama (Gunakan PIN yang sama di HP & Laptop)"/>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div style="display: flex; gap: 12px;">
+              <button class="btn-save" onclick="saveSupabaseSettings()" style="flex: 1; padding: 12px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                <i class="ti ti-link"></i> Hubungkan & Simpan
+              </button>
+            </div>
+            <div style="display: flex; gap: 12px;">
+              <button class="btn-cancel" onclick="triggerManualSyncUp()" style="flex: 1; padding: 10px; display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 600;" title="Kirim data lokal saat ini ke Cloud">
+                <i class="ti ti-upload"></i> Kirim ke Cloud 📤
+              </button>
+              <button class="btn-cancel" onclick="triggerManualSyncDown()" style="flex: 1; padding: 10px; display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 600;" title="Unduh data Cloud saat ini ke perangkat lokal">
+                <i class="ti ti-download"></i> Unduh dari Cloud 📥
+              </button>
+            </div>
+          </div>
+
+          <div id="sb-status-message" style="margin-top: 16px; font-size: 12px; padding: 10px 14px; border-radius: var(--radius-sm); display: none;"></div>
         </div>
-        
-        <div class="form-group" style="margin-bottom: 24px;">
-          <label class="form-label" for="tg-chat-id" style="font-weight: 600;">Chat ID Penerima</label>
-          <input class="form-input" type="text" id="tg-chat-id" value="${state.telegram.chatId || ''}" placeholder="cth: 987654321"/>
-        </div>
-        
-        <div style="display: flex; gap: 12px;">
-          <button class="btn-save" onclick="saveTelegramSettings()" style="flex: 1; padding: 12px; display: flex; align-items: center; justify-content: center; gap: 6px;">
-            <i class="ti ti-device-floppy"></i> Simpan
-          </button>
-          <button class="btn-cancel" onclick="testTelegramConnection()" style="flex: 1; padding: 12px; display: flex; align-items: center; justify-content: center; gap: 6px;">
-            <i class="ti ti-send"></i> Uji Kirim
-          </button>
-        </div>
-        
-        <div id="tg-status-message" style="margin-top: 16px; font-size: 12px; padding: 10px 14px; border-radius: var(--radius-sm); display: none;"></div>
+
       </div>
 
-      <!-- Right Side: Guide Card -->
-      <div class="card" style="display: flex; flex-direction: column; gap: 16px;">
-        <div class="card-title" style="font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
-          <i class="ti ti-help-circle" style="color: var(--gold); font-size: 18px;"></i>
-          Panduan Pembuatan Bot
-        </div>
+      <!-- Right Column: Guides -->
+      <div style="display: flex; flex-direction: column; gap: 20px;">
         
-        <div style="font-size: 12px; line-height: 1.6; color: var(--text2); display: flex; flex-direction: column; gap: 14px;">
-          <div style="display: flex; gap: 10px;">
-            <div style="width: 22px; height: 22px; border-radius: 50%; background: var(--bg3); display: flex; align-items: center; justify-content: center; font-weight: 600; color: var(--gold); flex-shrink: 0; font-size: 11px;">1</div>
-            <div>Cari <b>@BotFather</b> di Telegram dan kirim perintah <code>/newbot</code>.</div>
+        <!-- Telegram Guide Card -->
+        <div class="card" style="margin-top: 0; display: flex; flex-direction: column; gap: 16px;">
+          <div class="card-title" style="font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+            <i class="ti ti-help-circle" style="color: var(--gold); font-size: 18px;"></i>
+            Panduan Pembuatan Bot
           </div>
           
-          <div style="display: flex; gap: 10px;">
-            <div style="width: 22px; height: 22px; border-radius: 50%; background: var(--bg3); display: flex; align-items: center; justify-content: center; font-weight: 600; color: var(--gold); flex-shrink: 0; font-size: 11px;">2</div>
-            <div>Masukkan nama dan username bot kustom Anda. Anda akan menerima sebuah <b>Token API HTTP</b>. Salin token tersebut.</div>
-          </div>
-          
-          <div style="display: flex; gap: 10px;">
-            <div style="width: 22px; height: 22px; border-radius: 50%; background: var(--bg3); display: flex; align-items: center; justify-content: center; font-weight: 600; color: var(--gold); flex-shrink: 0; font-size: 11px;">3</div>
-            <div>Cari bot <b>@userinfobot</b> di Telegram, klik Start, dan salin nomor <b>Id</b> Anda. Itu adalah Chat ID Anda.</div>
-          </div>
-          
-          <div style="display: flex; gap: 10px;">
-            <div style="width: 22px; height: 22px; border-radius: 50%; background: var(--bg3); display: flex; align-items: center; justify-content: center; font-weight: 600; color: var(--gold); flex-shrink: 0; font-size: 11px;">4</div>
-            <div>Buka obrolan dengan bot baru Anda dan tekan tombol <b>Start</b>. Langkah ini wajib agar bot diizinkan mengirim pesan.</div>
-          </div>
-          
-          <div style="margin-top: 6px; padding: 10px 12px; background: rgba(255, 197, 62, 0.06); border: 1px solid rgba(255, 197, 62, 0.15); border-radius: var(--radius-sm); font-size: 11px; color: var(--gold-light);">
-            <i class="ti ti-info-circle" style="vertical-align: middle; margin-right: 4px;"></i>
-            <b>Pemberitahuan:</b> Data disimpan di dalam browser lokal Anda dan tidak dikirim ke server luar manapun selain Telegram API resmi.
+          <div style="font-size: 12px; line-height: 1.6; color: var(--text2); display: flex; flex-direction: column; gap: 14px;">
+            <div style="display: flex; gap: 10px;">
+              <div style="width: 22px; height: 22px; border-radius: 50%; background: var(--bg3); display: flex; align-items: center; justify-content: center; font-weight: 600; color: var(--gold); flex-shrink: 0; font-size: 11px;">1</div>
+              <div>Cari <b>@BotFather</b> di Telegram dan kirim perintah <code>/newbot</code>.</div>
+            </div>
+            
+            <div style="display: flex; gap: 10px;">
+              <div style="width: 22px; height: 22px; border-radius: 50%; background: var(--bg3); display: flex; align-items: center; justify-content: center; font-weight: 600; color: var(--gold); flex-shrink: 0; font-size: 11px;">2</div>
+              <div>Masukkan nama dan username bot kustom Anda. Salin <b>Token API HTTP</b>.</div>
+            </div>
+            
+            <div style="display: flex; gap: 10px;">
+              <div style="width: 22px; height: 22px; border-radius: 50%; background: var(--bg3); display: flex; align-items: center; justify-content: center; font-weight: 600; color: var(--gold); flex-shrink: 0; font-size: 11px;">3</div>
+              <div>Cari bot <b>@userinfobot</b>, klik Start, dan salin nomor <b>Id</b> Anda sebagai Chat ID.</div>
+            </div>
+            
+            <div style="display: flex; gap: 10px;">
+              <div style="width: 22px; height: 22px; border-radius: 50%; background: var(--bg3); display: flex; align-items: center; justify-content: center; font-weight: 600; color: var(--gold); flex-shrink: 0; font-size: 11px;">4</div>
+              <div>Buka obrolan dengan bot baru Anda dan tekan tombol <b>Start</b>.</div>
+            </div>
           </div>
         </div>
+
+        <!-- Supabase Guide Card -->
+        <div class="card" style="display: flex; flex-direction: column; gap: 16px;">
+          <div class="card-title" style="font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+            <i class="ti ti-database" style="color: var(--gold); font-size: 18px;"></i>
+            Inisialisasi Tabel Supabase
+          </div>
+          
+          <div style="font-size: 12px; line-height: 1.6; color: var(--text2); display: flex; flex-direction: column; gap: 14px;">
+            <div>Untuk memulai sinkronisasi, buka **SQL Editor** di Dashboard Supabase Anda, buat query baru, lalu jalankan perintah ini:</div>
+            
+            <pre style="background: var(--bg3); padding: 10px; border-radius: 8px; border: 1px solid var(--border); overflow-x: auto; font-family: var(--mono); font-size: 9px; color: var(--text2);">create table if not exists public.keuanganku_sync (
+  sync_code text primary key,
+  state_data jsonb not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.keuanganku_sync enable row level security;
+create policy "Allow public access" on public.keuanganku_sync for all using (true) with check (true);</pre>
+
+            <div style="padding: 10px 12px; background: rgba(255, 197, 62, 0.06); border: 1px solid rgba(255, 197, 62, 0.15); border-radius: var(--radius-sm); font-size: 11px; color: var(--gold-light);">
+              <i class="ti ti-info-circle" style="vertical-align: middle; margin-right: 4px;"></i>
+              <b>Sinkronisasi Otomatis:</b> Setelah diaktifkan, data Anda otomatis diunggah ke cloud setiap kali Anda mencatat transaksi atau menabung celengan ayam.
+            </div>
+          </div>
+        </div>
+
       </div>
+
     </div>
   `;
 }
@@ -2323,7 +2432,177 @@ async function testTelegramConnection() {
   }
 }
 
+let supabaseClient = null;
+
+function initSupabase() {
+  if (state.supabase && state.supabase.enabled && state.supabase.url && state.supabase.key) {
+    try {
+      if (window.supabase) {
+        supabaseClient = window.supabase.createClient(state.supabase.url, state.supabase.key);
+        console.log("Supabase Client initialized successfully!");
+      }
+    } catch (e) {
+      console.error("Gagal menginisialisasi client Supabase:", e);
+    }
+  } else {
+    supabaseClient = null;
+  }
+}
+
+async function syncToSupabase() {
+  if (!supabaseClient || !state.supabase.enabled || !state.supabase.syncCode) return;
+  try {
+    const payload = {
+      sync_code: state.supabase.syncCode,
+      state_data: state,
+      updated_at: new Date().toISOString()
+    };
+    const { error } = await supabaseClient
+      .from('keuanganku_sync')
+      .upsert(payload, { onConflict: 'sync_code' });
+      
+    if (error) {
+      console.error("Gagal sinkronisasi data ke Supabase Cloud:", error);
+    } else {
+      console.log("Sinkronisasi real-time ke Supabase Cloud berhasil!");
+    }
+  } catch (e) {
+    console.error("Error saat upload ke Supabase:", e);
+  }
+}
+
+async function syncFromSupabase(force = false) {
+  if (!supabaseClient || !state.supabase.enabled || !state.supabase.syncCode) return false;
+  try {
+    const { data, error } = await supabaseClient
+      .from('keuanganku_sync')
+      .select('state_data')
+      .eq('sync_code', state.supabase.syncCode)
+      .maybeSingle();
+      
+    if (error) {
+      console.error("Gagal mengunduh data dari Supabase:", error);
+      return false;
+    }
+    
+    if (data && data.state_data) {
+      if (force) {
+        Object.assign(state, data.state_data);
+        localStorage.setItem('kasirku_state', JSON.stringify(state));
+        return true;
+      }
+      return data.state_data;
+    }
+  } catch (e) {
+    console.error("Error saat fetch dari Supabase:", e);
+  }
+  return false;
+}
+
+function toggleSupabaseEnabled() {
+  state.supabase.enabled = !state.supabase.enabled;
+  const pill = document.getElementById('sb-toggle-pill');
+  if (pill) {
+    pill.classList.toggle('on', state.supabase.enabled);
+  }
+  
+  const badge = document.getElementById('sb-status-badge');
+  if (badge) {
+    badge.innerHTML = state.supabase.enabled ? '🟢 Cloud Terkoneksi (Real-time)' : '⚪ Lokal Only (Fallback)';
+  }
+  
+  if (state.supabase.enabled) {
+    initSupabase();
+  } else {
+    supabaseClient = null;
+  }
+  saveState();
+}
+
+function saveSupabaseSettings() {
+  const url = document.getElementById('sb-url').value.trim();
+  const key = document.getElementById('sb-key').value.trim();
+  const code = document.getElementById('sb-code').value.trim();
+  
+  if (!url || !key || !code) {
+    showSupabaseStatus('Mohon lengkapi URL, Anon Key, dan PIN terlebih dahulu.', 'error');
+    return;
+  }
+  
+  state.supabase.url = url;
+  state.supabase.key = key;
+  state.supabase.syncCode = code;
+  state.supabase.enabled = true;
+  
+  const pill = document.getElementById('sb-toggle-pill');
+  if (pill) pill.classList.add('on');
+  const badge = document.getElementById('sb-status-badge');
+  if (badge) badge.innerHTML = '🟢 Cloud Terkoneksi (Real-time)';
+  
+  initSupabase();
+  saveState();
+  
+  showSupabaseStatus('Koneksi Supabase Cloud berhasil dikonfigurasi dan disimpan!', 'success');
+}
+
+function showSupabaseStatus(msg, type) {
+  const el = document.getElementById('sb-status-message');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.display = 'block';
+  if (type === 'success') {
+    el.style.background = 'rgba(74, 222, 128, 0.1)';
+    el.style.border = '1px solid rgba(74, 222, 128, 0.25)';
+    el.style.color = 'var(--success)';
+  } else {
+    el.style.background = 'rgba(255, 92, 92, 0.1)';
+    el.style.border = '1px solid rgba(255, 92, 92, 0.25)';
+    el.style.color = 'var(--danger)';
+  }
+  setTimeout(() => {
+    el.style.display = 'none';
+  }, 6000);
+}
+
+async function triggerManualSyncUp() {
+  if (!state.supabase.url || !state.supabase.key || !state.supabase.syncCode) {
+    showSupabaseStatus('Konfigurasi Supabase Anda belum lengkap!', 'error');
+    return;
+  }
+  showSupabaseStatus('Sedang mengirim data ke Cloud...', 'success');
+  initSupabase();
+  if (supabaseClient) {
+    await syncToSupabase();
+    showSupabaseStatus('Data berhasil diunggah ke Supabase Cloud! 📤', 'success');
+  } else {
+    showSupabaseStatus('Gagal menginisialisasi Supabase client.', 'error');
+  }
+}
+
+async function triggerManualSyncDown() {
+  if (!state.supabase.url || !state.supabase.key || !state.supabase.syncCode) {
+    showSupabaseStatus('Konfigurasi Supabase Anda belum lengkap!', 'error');
+    return;
+  }
+  showSupabaseStatus('Sedang mengunduh data dari Cloud...', 'success');
+  initSupabase();
+  if (supabaseClient) {
+    const success = await syncFromSupabase(true);
+    if (success) {
+      showSupabaseStatus('Data berhasil diunduh! Halaman akan dimuat ulang...', 'success');
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } else {
+      showSupabaseStatus('Tidak ada data awan ditemukan untuk PIN tersebut atau gagal mengunduh.', 'error');
+    }
+  } else {
+    showSupabaseStatus('Gagal menginisialisasi Supabase client.', 'error');
+  }
+}
+
 // Initializing page load
+initSupabase();
 applyTheme();
 populateCategoryDropdown();
 renderDashboard();
