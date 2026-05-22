@@ -1429,8 +1429,12 @@ function renderFullTxnList() {
   `;
 }
 
-function deleteTransaction(index) {
-  if (confirm("Apakah Anda yakin ingin menghapus transaksi ini?")) {
+async function deleteTransaction(index) {
+  const confirmed = await showCustomConfirm({
+    title: "Hapus Transaksi",
+    message: "Apakah Anda yakin ingin menghapus transaksi ini? Catatan ini akan dihapus secara permanen."
+  });
+  if (confirmed) {
     state.transactions.splice(index, 1);
     saveState();
     if (currentPage === 'dashboard') {
@@ -1438,6 +1442,7 @@ function deleteTransaction(index) {
     } else if (currentPage === 'transaksi') {
       renderFullTxnList();
     }
+    showNotification('Transaksi berhasil dihapus.');
   }
 }
 
@@ -2105,12 +2110,16 @@ function addNewCategory() {
   renderKategoriPage();
 }
 
-function deleteCategory(name) {
+async function deleteCategory(name) {
   if (name === 'Lainnya') {
     showNotification('Kategori "Lainnya" tidak dapat dihapus sebagai cadangan default.', 'error');
     return;
   }
-  if (confirm(`Apakah Anda yakin ingin menghapus kategori "${name}"? Semua transaksi dengan kategori ini akan dialihkan ke kategori "Lainnya".`)) {
+  const confirmed = await showCustomConfirm({
+    title: "Hapus Kategori",
+    message: `Apakah Anda yakin ingin menghapus kategori "${name}"? Semua transaksi dengan kategori ini akan dialihkan ke kategori "Lainnya".`
+  });
+  if (confirmed) {
     state.transactions.forEach(t => {
       if (t.cat === name) t.cat = 'Lainnya';
     });
@@ -2122,6 +2131,7 @@ function deleteCategory(name) {
     if (currentPage === 'dashboard') {
       renderDashboard();
     }
+    showNotification('Kategori berhasil dihapus.');
   }
 }
 
@@ -2696,6 +2706,59 @@ function showCustomPrompt({ title, placeholder, value = '', isNumeric = false })
         cleanup(null);
       }
     });
+  });
+}
+
+function showCustomConfirm({ title, message }) {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay open';
+    overlay.style.cssText = `
+      position: fixed; inset: 0; background: rgba(0,0,0,0.65);
+      z-index: 10000; display: flex; align-items: center; justify-content: center;
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+      animation: fadeIn 0.2s ease forwards;
+    `;
+    
+    overlay.innerHTML = `
+      <div class="card" style="transform: scale(0.92); opacity: 0; animation: scaleUp 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; width: 92%; max-width: 400px; padding: 24px; border: 1px solid var(--border-hover); background: var(--bg2); box-shadow: 0 20px 40px rgba(0,0,0,0.4); border-radius: var(--radius-md);">
+        <div style="font-size: 15px; font-weight: 800; color: #FF5C5C; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+          <i class="ti ti-alert-triangle" style="font-size: 20px;"></i>
+          ${title}
+        </div>
+        <div style="font-size: 13px; color: var(--text2); line-height: 1.6; margin-bottom: 24px;">
+          ${message}
+        </div>
+        <div class="modal-actions" style="display: flex; gap: 12px; justify-content: flex-end;">
+          <button class="btn-cancel" id="custom-confirm-cancel" style="padding: 10px 18px; font-size: 12px; font-weight: 600; cursor: pointer; border-radius: var(--radius-sm);">Batal</button>
+          <button class="btn-save" id="custom-confirm-ok" style="padding: 10px 20px; font-size: 12px; font-weight: 700; cursor: pointer; border-radius: var(--radius-sm); background: #FF5C5C; color: #fff; box-shadow: 0 4px 12px rgba(255, 92, 92, 0.2); display: flex; align-items: center; gap: 6px;">
+            Hapus
+          </button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(overlay);
+    
+    const cleanup = (result) => {
+      overlay.style.opacity = '0';
+      overlay.style.pointerEvents = 'none';
+      setTimeout(() => {
+        overlay.remove();
+      }, 200);
+      resolve(result);
+    };
+    
+    overlay.querySelector('#custom-confirm-cancel').addEventListener('click', () => cleanup(false));
+    overlay.querySelector('#custom-confirm-ok').addEventListener('click', () => cleanup(true));
+    
+    const escHandler = (e) => {
+      if (e.key === 'Escape') {
+        window.removeEventListener('keydown', escHandler);
+        cleanup(false);
+      }
+    };
+    window.addEventListener('keydown', escHandler);
   });
 }
 
