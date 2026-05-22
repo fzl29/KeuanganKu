@@ -2453,6 +2453,7 @@ function toggleTelegramEnabled() {
     pill.classList.toggle('on', state.telegram.enabled);
   }
   saveState();
+  startTelegramBotListener();
 }
 
 function toggleTokenVisibility() {
@@ -2476,6 +2477,7 @@ function saveTelegramSettings() {
   state.telegram.token = token;
   state.telegram.chatId = chatId;
   saveState();
+  startTelegramBotListener();
   
   showTelegramStatus('Pengaturan Telegram berhasil disimpan!', 'success');
 }
@@ -2582,6 +2584,122 @@ async function sendTelegramMessage(text) {
   } catch (err) {
     console.error('Failed to send Telegram message:', err);
     return { ok: false, description: err.message };
+  }
+}
+
+let tgLastUpdateId = 0;
+
+function startTelegramBotListener() {
+  if (!state.telegram || !state.telegram.enabled || !state.telegram.token || !state.telegram.chatId) {
+    if (window.tgListenerInterval) {
+      clearInterval(window.tgListenerInterval);
+    }
+    return;
+  }
+  
+  if (window.tgListenerInterval) {
+    clearInterval(window.tgListenerInterval);
+  }
+  
+  fetch(`https://api.telegram.org/bot${state.telegram.token}/getUpdates?limit=1`)
+    .then(res => res.json())
+    .then(data => {
+      if (data.ok && data.result.length > 0) {
+        tgLastUpdateId = data.result[0].update_id;
+      }
+      window.tgListenerInterval = setInterval(checkTelegramCommands, 4500);
+    })
+    .catch(err => {
+      console.error("Failed to init TG updates listener:", err);
+      // fallback start anyway
+      window.tgListenerInterval = setInterval(checkTelegramCommands, 5000);
+    });
+}
+
+async function checkTelegramCommands() {
+  if (!state.telegram || !state.telegram.enabled || !state.telegram.token || !state.telegram.chatId) {
+    if (window.tgListenerInterval) {
+      clearInterval(window.tgListenerInterval);
+    }
+    return;
+  }
+  
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${state.telegram.token}/getUpdates?offset=${tgLastUpdateId + 1}`);
+    const data = await res.json();
+    if (data.ok && data.result.length > 0) {
+      for (const update of data.result) {
+        tgLastUpdateId = update.update_id;
+        
+        const message = update.message;
+        if (!message || !message.text) continue;
+        
+        // Ensure ONLY configured chatId can request reports for absolute security
+        if (String(message.chat.id) !== String(state.telegram.chatId)) continue;
+        
+        const text = message.text.trim().toLowerCase();
+        if (text === '/laporan' || text === '/status' || text === 'laporan') {
+          // Trigger a fresh, beautifully formatted report message
+          const stats = getStats();
+          const dateObj = new Date();
+          const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+          const dateStr = `${dateObj.getDate()} ${monthNames[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
+          
+          let reportText = `📊 <b>LAPORAN RINGKASAN KEUANGAN KEUANGANKU</b>\n` +
+                           `📅 <i>Tanggal Cetak: ${dateStr}</i>\n\n` +
+                           `━━━━━━━━━━━━━━━━━━━\n\n` +
+                           `🟢 <b>Total Pemasukan:</b>\n   <code>${rp(stats.income)}</code>\n\n` +
+                           `🔴 <b>Total Pengeluaran:</b>\n   <code>${rp(stats.expense)}</code>\n\n` +
+                           `💳 <b>Sisa Saldo Bersih:</b>\n   <code>${rp(stats.saldo)}</code>\n\n` +
+                           `━━━━━━━━━━━━━━━━━━━\n\n` +
+                           `📈 <b>Status Anggaran Kategori:</b>\n`;
+                           
+          let budgetList = '';
+          Object.keys(state.budgets).forEach(cat => {
+            const limit = state.budgets[cat].limit;
+            let spent = 0;
+            state.transactions.forEach(t => {
+              if (t.type === 'expense' && t.cat === cat) {
+                spent += t.amount;
+              }
+            });
+            const pct = limit > 0 ? Math.round((spent / limit) * 100) : 0;
+            budgetList += `• <b>${cat}</b>: <code>${rp(spent)}</code> / ${rp(limit)} (${pct}%)\n`;
+          });
+          
+          if (budgetList) {
+            reportText += budgetList + '\n';
+          } else {
+            reportText += `<i>(Belum ada anggaran kategori ditentukan)</i>\n\n`;
+          }
+          
+          reportText += `🐷 <b>Celengan Impian Aktif:</b>\n`;
+          let savingsList = '';
+          state.savings.forEach(s => {
+            const pct = Math.min(Math.round((s.terkumpul / s.target) * 100), 100);
+            savingsList += `• <b>${s.nama}</b>: <code>${rp(s.terkumpul)}</code> / ${rp(s.target)} (${pct}%)\n`;
+          });
+          
+          if (savingsList) {
+            reportText += savingsList + '\n';
+          } else {
+            reportText += `<i>(Belum ada celengan impian dibuat)</i>\n\n`;
+          }
+          
+          reportText += `━━━━━━━━━━━━━━━━━━━\n\n` +
+                         `<i>Laporan dikirim instan dari Aplikasi KeuanganKu Cloud.</i>`;
+          await sendTelegramMessage(reportText);
+        } else if (text === '/start' || text === '/help' || text === 'menu') {
+          const menuText = `👋 <b>Halo! Saya Bot Asisten KeuanganKu Anda.</b>\n\n` +
+                           `Anda bisa mengirim perintah berikut:\n` +
+                           `📊 <code>/laporan</code> - Untuk mendapatkan laporan ringkasan kas, anggaran, dan celengan aktif secara langsung.\n` +
+                           `❓ <code>/help</code> - Menampilkan menu panduan ini.`;
+          await sendTelegramMessage(menuText);
+        }
+      }
+    }
+  } catch (err) {
+    console.error("Error polling TG updates:", err);
   }
 }
 
@@ -2957,6 +3075,7 @@ initSupabase();
 applyTheme();
 populateCategoryDropdown();
 renderDashboard();
+startTelegramBotListener();
 </script>
 </body>
 </html>
