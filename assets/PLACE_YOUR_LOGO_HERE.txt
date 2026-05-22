@@ -1,0 +1,5 @@
+PANDUAN LOGO KEUANGANKU:
+-----------------------
+Silakan taruh file foto atau logo kustom Anda di dalam folder ini dengan nama 'logo.png' (contoh: assets/logo.png) untuk menggantikan ikon default aplikasi Keuanganku.
+
+Aplikasi telah diprogram untuk mendeteksi file ini secara otomatis. Jika file ini belum ada, aplikasi akan menampilkan inisial huruf "K" emas secara elegan sebagai cadangan (fallback).

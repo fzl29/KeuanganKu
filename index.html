@@ -1,0 +1,2332 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Keuanganku - Manajemen Keuangan Pribadi</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  :root {
+    --gold: #FFC53E;
+    --gold-dim: #E6A800;
+    --gold-light: #FFF3C4;
+    --gold-glow: rgba(255,197,62,0.12);
+    --bg: #09090B;
+    --bg2: rgba(22, 22, 26, 0.45);
+    --bg3: rgba(30, 30, 36, 0.55);
+    --border: rgba(255, 255, 255, 0.07);
+    --border-hover: rgba(255, 197, 62, 0.45);
+    --text: #F8FAFC;
+    --text2: #94A3B8;
+    --text3: #475569;
+    --danger: #FF5C5C;
+    --success: #4ADE80;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --ff: 'Plus Jakarta Sans', sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+    --transition: 0.25s cubic-bezier(.4,0,.2,1);
+    --glass-blur: blur(18px);
+    --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35);
+  }
+  .light {
+    --bg: #FAF9F6;
+    --bg2: rgba(255, 255, 255, 0.45);
+    --bg3: rgba(243, 244, 246, 0.6);
+    --border: rgba(15, 23, 42, 0.07);
+    --border-hover: rgba(180, 140, 0, 0.45);
+    --text: #0F172A;
+    --text2: #64748B;
+    --text3: #94A3B8;
+    --gold-glow: rgba(255,197,62,0.12);
+    --shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: var(--ff);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    transition: background var(--transition), color var(--transition);
+    font-size: 14px;
+    line-height: 1.5;
+    position: relative;
+    overflow-x: hidden;
+  }
+  
+  /* Ambient Glow Blobs */
+  .ambient-glow {
+    position: fixed;
+    width: 600px;
+    height: 600px;
+    border-radius: 50%;
+    filter: blur(140px);
+    opacity: 0.08;
+    z-index: -1;
+    pointer-events: none;
+    transition: opacity var(--transition);
+  }
+  .bg-glow-1 {
+    background: radial-gradient(circle, var(--gold) 0%, transparent 70%);
+    top: -150px;
+    right: -100px;
+  }
+  .bg-glow-2 {
+    background: radial-gradient(circle, #A78BFA 0%, transparent 70%);
+    bottom: -150px;
+    left: 10%;
+  }
+  .light .ambient-glow {
+    opacity: 0.05;
+  }
+
+  .app-shell { display: flex; min-height: 100vh; position: relative; z-index: 1; }
+  .sidebar {
+    width: 220px;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    z-index: 10;
+    transition: background var(--transition), border-color var(--transition);
+  }
+  .sidebar-logo {
+    padding: 24px 20px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .logo-icon {
+    width: 36px; height: 36px;
+    background: var(--gold);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 15px; color: #111;
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(255, 197, 62, 0.3);
+  }
+  .logo-text { font-size: 15px; font-weight: 600; letter-spacing: -0.3px; }
+  .logo-sub { font-size: 10px; color: var(--text2); letter-spacing: 0.5px; text-transform: uppercase; }
+  .nav { flex: 1; padding: 16px 12px; }
+  .nav-section-label {
+    font-size: 10px; color: var(--text3); letter-spacing: 1px;
+    text-transform: uppercase; padding: 0 8px; margin: 16px 0 6px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 10px; border-radius: var(--radius-sm);
+    cursor: pointer; color: var(--text2);
+    transition: all var(--transition); font-size: 13px;
+    margin-bottom: 2px; user-select: none;
+    border: 1px solid transparent;
+  }
+  .nav-item:hover { background: var(--gold-glow); color: var(--text); border-color: rgba(255,197,62,0.1); }
+  .nav-item.active { background: var(--gold-glow); color: var(--gold); font-weight: 500; border-color: rgba(255,197,62,0.25); }
+  .nav-item i { font-size: 16px; width: 18px; text-align: center; }
+  .sidebar-bottom {
+    padding: 16px 12px;
+    border-top: 1px solid var(--border);
+  }
+  .theme-toggle {
+    display: flex; align-items: center; gap: 8px;
+    padding: 9px 10px; border-radius: var(--radius-sm);
+    cursor: pointer; background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text2); font-size: 12px;
+    transition: all var(--transition); font-family: var(--ff);
+    width: 100%; justify-content: space-between;
+  }
+  .theme-toggle:hover { border-color: var(--border-hover); color: var(--text); }
+  .toggle-pill {
+    width: 28px; height: 16px; border-radius: 8px;
+    background: var(--bg); border: 1px solid var(--border);
+    position: relative; transition: background var(--transition);
+  }
+  .toggle-pill.on { background: var(--gold); }
+  .toggle-dot {
+    position: absolute; top: 2px; left: 2px;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: #111; transition: transform var(--transition);
+  }
+  .toggle-pill.on .toggle-dot { transform: translateX(12px); background: #fff; }
+  .main { margin-left: 220px; flex: 1; min-height: 100vh; position: relative; }
+  .topbar {
+    padding: 20px 28px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 5;
+    background: var(--bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    transition: background var(--transition), border-color var(--transition);
+  }
+  .page-title { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .period-select {
+    background: var(--bg3); border: 1px solid var(--border);
+    color: var(--text); padding: 7px 12px; border-radius: var(--radius-sm);
+    font-family: var(--ff); font-size: 12px; cursor: pointer;
+    transition: border-color var(--transition); outline: none;
+  }
+  .period-select:hover { border-color: var(--border-hover); }
+  .btn-add {
+    background: var(--gold); color: #111; border: none;
+    padding: 8px 16px; border-radius: var(--radius-sm);
+    font-family: var(--ff); font-size: 13px; font-weight: 600;
+    cursor: pointer; display: flex; align-items: center; gap: 6px;
+    transition: opacity var(--transition), transform var(--transition);
+    box-shadow: 0 4px 12px rgba(255, 197, 62, 0.25);
+  }
+  .btn-add:hover { opacity: 0.92; transform: translateY(-1px); }
+  .btn-add:active { transform: translateY(0); }
+  .content { padding: 24px 28px; }
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+  .stat-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px 20px;
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    box-shadow: var(--shadow);
+    transition: border-color var(--transition), background var(--transition);
+    cursor: default;
+  }
+  .stat-card:hover { border-color: var(--border-hover); }
+  .stat-card.gold { border-color: rgba(255,197,62,0.45); background: rgba(255,197,62,0.1); }
+  .stat-label { font-size: 11px; color: var(--text2); letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 8px; }
+  .stat-value { font-size: 22px; font-weight: 700; font-family: var(--mono); letter-spacing: -1px; }
+  .stat-value.income { color: var(--success); }
+  .stat-value.expense { color: var(--danger); }
+  .stat-value.gold-text { color: var(--gold); }
+  .stat-change {
+    margin-top: 6px; font-size: 11px; color: var(--text2);
+    display: flex; align-items: center; gap: 4px;
+  }
+  .stat-change .up { color: var(--success); }
+  .stat-change .down { color: var(--danger); }
+  .two-col { display: grid; grid-template-columns: 1fr 340px; gap: 16px; }
+  .card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px;
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    box-shadow: var(--shadow);
+    transition: border-color var(--transition), background var(--transition);
+  }
+  .card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .card-title { font-size: 13px; font-weight: 600; letter-spacing: -0.2px; }
+  .card-action { font-size: 11px; color: var(--gold); cursor: pointer; }
+  .card-action:hover { text-decoration: underline; }
+  .txn-list { display: flex; flex-direction: column; gap: 2px; }
+  .txn-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 8px; border-radius: var(--radius-sm);
+    transition: background var(--transition); cursor: pointer;
+  }
+  .txn-item:hover { background: rgba(255, 255, 255, 0.04); }
+  .light .txn-item:hover { background: rgba(0, 0, 0, 0.03); }
+  .txn-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; flex-shrink: 0;
+  }
+  .txn-icon.food { background: rgba(255,197,62,0.12); color: var(--gold); }
+  .txn-icon.salary { background: rgba(74,222,128,0.1); color: var(--success); }
+  .txn-icon.shop { background: rgba(255,92,92,0.1); color: var(--danger); }
+  .txn-icon.transport { background: rgba(96,165,250,0.1); color: #60A5FA; }
+  .txn-icon.health { background: rgba(167,139,250,0.1); color: #A78BFA; }
+  .txn-meta { flex: 1; min-width: 0; }
+  .txn-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .txn-cat { font-size: 11px; color: var(--text2); }
+  .txn-right { text-align: right; flex-shrink: 0; }
+  .txn-amount { font-family: var(--mono); font-size: 13px; font-weight: 600; }
+  .txn-amount.income { color: var(--success); }
+  .txn-amount.expense { color: var(--danger); }
+  .txn-date { font-size: 10px; color: var(--text2); }
+  .bar-chart { display: flex; align-items: flex-end; gap: 8px; height: 120px; padding: 0 4px; }
+  .bar-group { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .bars { display: flex; gap: 3px; align-items: flex-end; height: 100px; }
+  .bar {
+    width: 16px; border-radius: 4px 4px 0 0; min-height: 4px;
+    transition: opacity var(--transition);
+  }
+  .bar.income-bar { background: var(--gold); }
+  .bar.expense-bar { background: rgba(255,92,92,0.55); }
+  .bar:hover { opacity: 0.75; }
+  .bar-label { font-size: 10px; color: var(--text2); }
+  .chart-legend {
+    display: flex; gap: 16px; margin-top: 12px; padding: 0 4px;
+  }
+  .legend-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; margin-top: 3px; }
+  .legend-item { display: flex; align-items: flex-start; gap: 5px; font-size: 11px; color: var(--text2); }
+  .budget-list { display: flex; flex-direction: column; gap: 12px; }
+  .budget-item {}
+  .budget-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+  .budget-name { font-size: 12px; font-weight: 500; }
+  .budget-nums { font-size: 11px; color: var(--text2); font-family: var(--mono); }
+  .progress-bg {
+    height: 6px; background: var(--bg3); border-radius: 4px; overflow: hidden;
+  }
+  .progress-fill { height: 100%; border-radius: 4px; transition: width 0.6s ease; }
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+    z-index: 100; display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity var(--transition);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--bg2); border: 1px solid var(--border-hover);
+    border-radius: 20px; padding: 28px; width: 380px;
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    box-shadow: var(--shadow);
+    transform: scale(0.96); transition: transform var(--transition);
+  }
+  .modal-overlay.open .modal { transform: scale(1); }
+  .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 20px; letter-spacing: -0.2px; }
+  .form-group { margin-bottom: 14px; }
+  .form-label { font-size: 11px; color: var(--text2); letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 5px; display: block; }
+  .form-input {
+    width: 100%; background: var(--bg3); border: 1px solid var(--border);
+    color: var(--text); padding: 10px 12px; border-radius: var(--radius-sm);
+    font-family: var(--ff); font-size: 13px; outline: none;
+    transition: border-color var(--transition);
+  }
+  .form-input:focus { border-color: var(--gold); }
+  .type-toggle {
+    display: flex; gap: 8px;
+  }
+  .type-btn {
+    flex: 1; padding: 9px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border); background: var(--bg3);
+    color: var(--text2); font-family: var(--ff); font-size: 12px;
+    cursor: pointer; transition: all var(--transition); font-weight: 500;
+  }
+  .type-btn.active-income { border-color: var(--success); color: var(--success); background: rgba(74,222,128,0.08); }
+  .type-btn.active-expense { border-color: var(--danger); color: var(--danger); background: rgba(255,92,92,0.08); }
+  .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+  .btn-cancel {
+    flex: 1; padding: 10px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border); background: transparent;
+    color: var(--text2); font-family: var(--ff); font-size: 13px;
+    cursor: pointer; transition: all var(--transition);
+  }
+  .btn-cancel:hover { border-color: var(--border-hover); color: var(--text); }
+  .btn-save {
+    flex: 1; padding: 10px; border-radius: var(--radius-sm);
+    background: var(--gold); color: #111; font-family: var(--ff);
+    font-size: 13px; font-weight: 600; border: none; cursor: pointer;
+    transition: opacity var(--transition);
+    box-shadow: 0 4px 12px rgba(255, 197, 62, 0.25);
+  }
+  .btn-save:hover { opacity: 0.88; }
+  .empty-state { text-align: center; padding: 32px 0; color: var(--text2); font-size: 12px; }
+  @keyframes slideIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  .txn-item { animation: slideIn 0.25s ease both; }
+
+  /* Mobile Bottom Navigation Bar Styles */
+  .mobile-nav {
+    display: none;
+  }
+
+  /* Force clean overflow reset to eliminate horizontal scrolling */
+  html, body {
+    overflow-x: hidden !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  /* Responsive Mobile & Tablet Styles */
+  @media (max-width: 992px) {
+    .two-col {
+      grid-template-columns: 1fr !important;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .sidebar {
+      display: none !important;
+    }
+    .main {
+      margin-left: 0 !important;
+      padding-bottom: 74px !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      overflow-x: hidden !important;
+    }
+    
+    /* Elegant Two-row Stacking for Topbar on Mobile */
+    .topbar {
+      padding: 12px 16px !important;
+      flex-direction: column !important;
+      align-items: stretch !important;
+      gap: 12px !important;
+    }
+    .topbar > div:first-child {
+      display: flex !important;
+      justify-content: space-between !important;
+      align-items: center !important;
+      width: 100% !important;
+      gap: 8px !important;
+    }
+    .topbar-right {
+      display: flex !important;
+      justify-content: space-between !important;
+      align-items: center !important;
+      width: 100% !important;
+      gap: 12px !important;
+    }
+    .period-select {
+      flex: 1 !important;
+      max-width: 130px !important;
+      padding: 8px 10px !important;
+      font-size: 11px !important;
+    }
+    .btn-add {
+      flex: 1.2 !important;
+      justify-content: center !important;
+      font-size: 11px !important;
+      padding: 8px 14px !important;
+    }
+    
+    .content {
+      padding: 16px !important;
+    }
+    .mobile-logo-brand {
+      display: flex !important;
+    }
+    
+    /* Show Bottom Nav Bar */
+    .mobile-nav {
+      display: flex;
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: 60px;
+      background: rgba(18, 18, 22, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-top: 1px solid var(--border);
+      z-index: 100;
+      justify-content: space-around;
+      align-items: center;
+      padding: 0 4px;
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4);
+    }
+    
+    .light .mobile-nav {
+      background: rgba(255, 255, 255, 0.85);
+      border-top-color: var(--border);
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
+    }
+    
+    .mobile-nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      color: var(--text2);
+      cursor: pointer;
+      flex: 1;
+      height: 100%;
+      transition: all var(--transition);
+      border-radius: var(--radius-sm);
+    }
+    .mobile-nav-item i {
+      font-size: 18px;
+    }
+    .mobile-nav-item span {
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.1px;
+    }
+    .mobile-nav-item.active {
+      color: var(--gold);
+    }
+    
+    /* 4 Financial Cards Grid on Mobile (2x2 layout) */
+    #view-dashboard > div:first-child {
+      grid-template-columns: repeat(2, 1fr) !important;
+      gap: 12px !important;
+    }
+    
+    /* ATM Card Row Stack on Mobile */
+    .two-col > div:first-child > div:first-child {
+      flex-direction: column !important;
+      gap: 12px !important;
+    }
+    .two-col > div:first-child > div:first-child > div:last-child {
+      width: 100% !important;
+      flex-direction: row !important;
+      height: auto !important;
+    }
+    .two-col > div:first-child > div:first-child > div:last-child > div {
+      flex: 1 !important;
+      padding: 10px !important;
+      min-height: auto !important;
+    }
+
+    /* Statistik Page stacking on Mobile */
+    #view-statistik {
+      grid-template-columns: 1fr !important;
+      gap: 16px !important;
+    }
+    #view-statistik > div {
+      width: 100% !important;
+    }
+    
+    /* Modal responsive widths */
+    .modal {
+      width: 92% !important;
+      padding: 20px !important;
+      margin: 0 auto;
+    }
+  }
+
+  @media (max-width: 480px) {
+    /* Font size tweaks for small mobile phones */
+    .page-title {
+      font-size: 15px !important;
+    }
+    #page-sub {
+      display: none !important; /* Hide subtitle to preserve space */
+    }
+    .stat-value {
+      font-size: 15px !important;
+    }
+    #stat-saldo {
+      font-size: 19px !important;
+    }
+    .ratio-grid {
+      grid-template-columns: 1fr !important;
+      gap: 12px !important;
+    }
+  }
+
+  /* Premium Table Styles */
+  .table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-top: 10px;
+  }
+  .premium-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 13px;
+  }
+  .premium-table th {
+    padding: 12px 16px;
+    color: var(--text2);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border);
+  }
+  .premium-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    vertical-align: middle;
+  }
+  .premium-table tr {
+    transition: background var(--transition);
+  }
+  .premium-table tr:hover {
+    background: rgba(255, 255, 255, 0.02);
+  }
+  .light .premium-table tr:hover {
+    background: rgba(0, 0, 0, 0.02);
+  }
+  .badge-type {
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    display: inline-block;
+  }
+  .badge-type.income {
+    background: rgba(74, 222, 128, 0.1);
+    color: var(--success);
+    border: 1px solid rgba(74, 222, 128, 0.2);
+  }
+  .badge-type.expense {
+    background: rgba(255, 92, 92, 0.1);
+    color: var(--danger);
+    border: 1px solid rgba(255, 92, 92, 0.2);
+  }
+  .btn-delete-txn {
+    background: transparent;
+    border: none;
+    color: var(--text3);
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 6px;
+    transition: all var(--transition);
+  }
+  .btn-delete-txn:hover {
+    color: var(--danger);
+    background: rgba(255, 92, 92, 0.1);
+  }
+  .btn-action-cat:hover {
+    color: var(--gold) !important;
+    background: rgba(255, 197, 62, 0.1) !important;
+  }
+  .btn-action-cat:last-child:hover {
+    color: var(--danger) !important;
+    background: rgba(255, 92, 92, 0.1) !important;
+  }
+</style>
+</head>
+<body>
+
+<div class="ambient-glow bg-glow-1"></div>
+<div class="ambient-glow bg-glow-2"></div>
+
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon" style="overflow: hidden; position: relative;">
+        <img src="assets/logo.png" alt="" style="width: 100%; height: 100%; object-fit: contain;" id="logo-img" onload="this.parentElement.style.background='transparent'; this.parentElement.style.boxShadow='none';" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'; this.parentElement.style.background='var(--gold)';" />
+        <span class="logo-fallback-text" style="display: none; font-weight: 800; font-size: 16px; color: #111;">K</span>
+      </div>
+      <div>
+        <div class="logo-text">Keuangan<span style="color:var(--gold)">ku</span></div>
+        <div class="logo-sub">Manajemen Keuangan</div>
+      </div>
+    </div>
+    <nav class="nav">
+      <div class="nav-section-label">Menu</div>
+      <div class="nav-item active" onclick="setPage('dashboard',this)">
+        <i class="ti ti-layout-dashboard" aria-hidden="true"></i> Dashboard
+      </div>
+      <div class="nav-item" onclick="setPage('transaksi',this)">
+        <i class="ti ti-list-details" aria-hidden="true"></i> Transaksi
+      </div>
+      <div class="nav-item" onclick="setPage('anggaran',this)">
+        <i class="ti ti-wallet" aria-hidden="true"></i> Anggaran
+      </div>
+      <div class="nav-item" onclick="setPage('tabungan',this)">
+        <i class="ti ti-pig" aria-hidden="true"></i> Tabungan
+      </div>
+      <div class="nav-section-label">Laporan</div>
+      <div class="nav-item" onclick="setPage('statistik',this)">
+        <i class="ti ti-chart-bar" aria-hidden="true"></i> Statistik
+      </div>
+      <div class="nav-item" onclick="setPage('kategori',this)">
+        <i class="ti ti-tag" aria-hidden="true"></i> Kategori
+      </div>
+      <div class="nav-item" onclick="setPage('pengaturan',this)">
+        <i class="ti ti-settings" aria-hidden="true"></i> Pengaturan
+      </div>
+    </nav>
+    
+    <!-- Premium Banner Card inside sidebar -->
+    <div class="sidebar-banner" style="background: rgba(255, 197, 62, 0.04); border: 1px solid rgba(255, 197, 62, 0.1); border-radius: var(--radius-md); padding: 14px 16px; margin: 12px; font-size: 11px; line-height: 1.5; color: var(--text2); display: flex; flex-direction: column; gap: 8px;">
+      <div style="font-weight: 700; color: var(--gold); font-size: 12px;">Keuanganku Premium</div>
+      <span>Integrasikan Bot Telegram Anda untuk notifikasi otomatis instan.</span>
+      <div style="color: var(--gold); font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;" onclick="setPage('pengaturan')">
+        Coba Sekarang <i class="ti ti-arrow-right" style="font-size: 12px;"></i>
+      </div>
+    </div>
+    
+    <!-- User Profile Card inside sidebar -->
+    <div class="sidebar-profile" style="display: flex; align-items: center; gap: 10px; padding: 12px; margin: 0 12px 6px; border-top: 1px solid var(--border); padding-top: 16px;">
+      <div class="profile-avatar" style="width: 32px; height: 32px; border-radius: 50%; background: var(--gold); display: flex; align-items: center; justify-content: center; font-weight: 800; color: #111; font-size: 13px;">U</div>
+      <div>
+        <div style="font-size: 12px; font-weight: 600; color: var(--text);">Pengguna Setia</div>
+        <div style="font-size: 10px; color: var(--text2);">Premium Member</div>
+      </div>
+    </div>
+
+    <div class="sidebar-bottom">
+      <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle tema">
+        <span id="theme-label" style="display:flex;align-items:center;gap:6px;">
+          <i class="ti ti-moon" id="theme-icon" aria-hidden="true" style="font-size:14px;"></i>
+          <span id="theme-text">Dark Mode</span>
+        </span>
+        <div class="toggle-pill" id="toggle-pill">
+          <div class="toggle-dot"></div>
+        </div>
+      </button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <!-- Mobile Logo (KK) Fallback -->
+        <div class="mobile-logo-brand" style="display: none; align-items: center; gap: 8px;">
+          <div class="logo-icon" style="width: 32px; height: 32px; font-size: 13px; box-shadow: none; background: var(--gold); color: #111; font-weight: 700; border-radius: 8px; display: flex; align-items: center; justify-content: center;">K</div>
+          <span style="font-weight: 800; font-size: 15px; color: var(--text); letter-spacing: -0.3px;">Keuanganku</span>
+        </div>
+        <div>
+          <div class="page-title" id="page-title">Dashboard</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:2px;" id="page-sub">Selamat datang kembali 👋</div>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <select class="period-select" id="period-select" onchange="changePeriod(this.value)">
+          <option value="mei2026">Mei 2026</option>
+          <option value="apr2026">April 2026</option>
+          <option value="mar2026">Maret 2026</option>
+        </select>
+        <button class="btn-add" onclick="openModal()">
+          <i class="ti ti-plus" aria-hidden="true"></i> Catat Transaksi
+        </button>
+      </div>
+    </div>
+
+    <div class="content" id="main-content">
+      <!-- View Dashboard -->
+      <div id="view-dashboard" class="view-container">
+        <!-- 4 Card Ringkasan Keuangan Grid -->
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px;">
+          <!-- Card Pemasukan -->
+          <div class="card" style="padding: 16px; background: rgba(74,222,128,0.03); border: 1px solid rgba(74,222,128,0.1);">
+            <div style="font-size: 10px; color: var(--text2); text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px;">Total Pemasukan</div>
+            <div class="stat-value income" id="stat-income-card" style="font-size: 18px; font-weight: 800; color: var(--success);">Rp 0</div>
+            <div style="font-size: 9px; color: var(--text2); margin-top: 4px;" id="income-count-card">0 transaksi</div>
+          </div>
+          <!-- Card Pengeluaran -->
+          <div class="card" style="padding: 16px; background: rgba(255,92,92,0.03); border: 1px solid rgba(255,92,92,0.1);">
+            <div style="font-size: 10px; color: var(--text2); text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px;">Total Pengeluaran</div>
+            <div class="stat-value expense" id="stat-expense-card" style="font-size: 18px; font-weight: 800; color: var(--danger);">Rp 0</div>
+            <div style="font-size: 9px; color: var(--text2); margin-top: 4px;" id="expense-count-card">0 transaksi</div>
+          </div>
+          <!-- Card Tabungan -->
+          <div class="card" style="padding: 16px; background: rgba(255,197,62,0.03); border: 1px solid rgba(255,197,62,0.1);">
+            <div style="font-size: 10px; color: var(--text2); text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px;">Total Tabungan</div>
+            <div class="stat-value" id="stat-tabungan-card" style="font-size: 18px; font-weight: 800; color: var(--gold);">Rp 0</div>
+            <div style="font-size: 9px; color: var(--text2); margin-top: 4px;" id="tabungan-count-card">Alokasi & Investasi</div>
+          </div>
+          <!-- Card Sisa Saldo -->
+          <div class="card" style="padding: 16px; background: rgba(255,255,255,0.02); border: 1px solid var(--border);">
+            <div style="font-size: 10px; color: var(--text2); text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px;">Sisa Saldo</div>
+            <div class="stat-value" id="stat-saldo-card" style="font-size: 18px; font-weight: 800; color: var(--text);">Rp 0</div>
+            <div style="font-size: 9px; color: var(--text2); margin-top: 4px;" id="saldo-desc-card">—</div>
+          </div>
+        </div>
+
+        <div class="two-col" style="grid-template-columns: 1fr 380px; gap: 20px; align-items: start;">
+          <!-- Column 1 (Left / Main Panel) -->
+          <div style="display: flex; flex-direction: column; gap: 20px;">
+            <!-- Premium ATM / Credit Card Mockup Row -->
+            <div style="display: flex; gap: 16px; align-items: stretch;">
+              <!-- ATM Card -->
+              <div class="card" style="flex: 1; min-height: 180px; background: linear-gradient(135deg, #18181b 0%, #111115 50%, rgba(255, 197, 62, 0.25) 200%); border: 1px solid rgba(255, 197, 62, 0.15); border-radius: 20px; padding: 24px; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; box-shadow: var(--shadow);">
+                <!-- Glowing core blob in card -->
+                <div style="position: absolute; right: -20px; bottom: -20px; width: 140px; height: 140px; background: radial-gradient(circle, rgba(255, 197, 62, 0.15) 0%, transparent 70%); pointer-events: none;"></div>
+                
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 10px; font-weight: 700; color: var(--gold); letter-spacing: 1px; text-transform: uppercase;">Keuanganku Card</span>
+                  <i class="ti ti-wifi" style="color: var(--text2); font-size: 16px;"></i>
+                </div>
+                
+                <div style="margin-top: 10px;">
+                  <div style="font-size: 10px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px;">Saldo Bersih</div>
+                  <div style="font-size: 24px; font-weight: 800; color: var(--text); letter-spacing: -0.5px;" id="stat-saldo">Rp 0</div>
+                  <div style="font-size: 10px; margin-top: 2px;" id="saldo-desc">—</div>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 10px;">
+                  <div>
+                    <div style="font-family: var(--ff-mono); font-size: 13px; color: var(--text); word-spacing: 4px;">•••• •••• •••• 8888</div>
+                    <div style="font-size: 9px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px;">Premium Member</div>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 4px;">
+                    <!-- Sleek Visa/Mastercard custom graphic -->
+                    <div style="width: 24px; height: 24px; border-radius: 50%; background: rgba(255,255,255,0.1); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center;">
+                      <div style="width: 14px; height: 14px; border-radius: 50%; background: var(--gold);"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Quick Action Row -->
+              <div style="display: flex; flex-direction: column; gap: 12px; width: 130px; justify-content: stretch;">
+                <div class="card" onclick="openModal()" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; cursor: pointer; text-align: center; border: 1px solid var(--border); transition: all var(--transition); background: var(--bg2); padding: 12px; border-radius: var(--radius-md);">
+                  <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(255,197,62,0.1); border: 1px solid rgba(255,197,62,0.2); display: flex; align-items: center; justify-content: center; color: var(--gold);">
+                    <i class="ti ti-plus" style="font-size: 18px;"></i>
+                  </div>
+                  <span style="font-size: 11px; font-weight: 600; color: var(--text);">Tambah</span>
+                </div>
+                
+                <div class="card" onclick="setPage('pengaturan')" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; cursor: pointer; text-align: center; border: 1px solid var(--border); transition: all var(--transition); background: var(--bg2); padding: 12px; border-radius: var(--radius-md);">
+                  <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.05); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--text2);">
+                    <i class="ti ti-settings" style="font-size: 16px;"></i>
+                  </div>
+                  <span style="font-size: 11px; font-weight: 600; color: var(--text2);">Bot Notif</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Recent Transactions -->
+            <div class="card">
+              <div class="card-header" style="margin-bottom: 16px;">
+                <div class="card-title" style="font-size: 14px; font-weight: 700;">Transaksi Terbaru</div>
+                <div class="card-action" onclick="setPage('transaksi',null)" style="font-size: 11px; font-weight: 600; color: var(--gold); cursor: pointer;">Lihat Semua →</div>
+              </div>
+              <div class="txn-list" id="txn-list-home" style="display: flex; flex-direction: column; gap: 10px;">
+                <div class="empty-state">Belum ada transaksi.</div>
+              </div>
+            </div>
+
+            <!-- Anggaran Kategori (Savings & Goals style) -->
+            <div class="card">
+              <div class="card-header" style="margin-bottom: 16px;">
+                <div class="card-title" style="font-size: 14px; font-weight: 700;">Tabungan & Batas Anggaran</div>
+                <div class="card-action" onclick="setPage('anggaran',null)" style="font-size: 11px; font-weight: 600; color: var(--gold); cursor: pointer;">Atur →</div>
+              </div>
+              <div class="budget-list" id="budget-list-home" style="display: flex; flex-direction: column; gap: 12px;"></div>
+            </div>
+          </div>
+
+          <!-- Column 2 (Right Panel) -->
+          <div style="display: flex; flex-direction: column; gap: 20px;">
+            <!-- Bar Chart Widget -->
+            <div class="card">
+              <div class="card-header" style="margin-bottom: 14px;">
+                <div class="card-title" style="font-size: 14px; font-weight: 700;">Grafik Pendapatan & Pengeluaran</div>
+              </div>
+              <div style="height: 160px; position: relative; width: 100%;">
+                <canvas id="dashboard-bar-chart"></canvas>
+              </div>
+            </div>
+
+            <!-- Horizontal Pemasukan & Pengeluaran Row -->
+            <div style="display: flex; gap: 12px;">
+              <!-- Pemasukan -->
+              <div class="card" style="flex: 1; padding: 16px; background: rgba(74,222,128,0.02); border: 1px solid rgba(74,222,128,0.08);">
+                <div style="font-size: 10px; color: var(--text2); text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px;">Pemasukan</div>
+                <div class="stat-value income" id="stat-income" style="font-size: 16px; font-weight: 800; color: var(--success);">Rp 0</div>
+                <div style="font-size: 9px; color: var(--text2); margin-top: 4px;" id="income-count">0 transaksi</div>
+              </div>
+              
+              <!-- Pengeluaran -->
+              <div class="card" style="flex: 1; padding: 16px; background: rgba(255,92,92,0.02); border: 1px solid rgba(255,92,92,0.08);">
+                <div style="font-size: 10px; color: var(--text2); text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px;">Pengeluaran</div>
+                <div class="stat-value expense" id="stat-expense" style="font-size: 16px; font-weight: 800; color: var(--danger);">Rp 0</div>
+                <div style="font-size: 9px; color: var(--text2); margin-top: 4px;" id="expense-count">0 transaksi</div>
+              </div>
+            </div>
+
+            <!-- Category Summary breakdown list -->
+            <div class="card">
+              <div class="card-header" style="margin-bottom: 16px;">
+                <div class="card-title" style="font-size: 14px; font-weight: 700;">Ringkasan Pengeluaran Kategori</div>
+              </div>
+              <div id="category-summary" style="display:flex;flex-direction:column;gap:12px;"></div>
+            </div>
+
+            <!-- Hidden elements for backward compatibility -->
+            <div style="display: none;" id="stat-count">0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- View Transaksi -->
+      <div id="view-transaksi" class="view-container" style="display: none;"></div>
+
+      <!-- View Anggaran -->
+      <div id="view-anggaran" class="view-container" style="display: none;"></div>
+
+      <!-- View Tabungan -->
+      <div id="view-tabungan" class="view-container" style="display: none;"></div>
+
+      <!-- View Statistik -->
+      <div id="view-statistik" class="view-container" style="display: none;"></div>
+
+      <!-- View Kategori -->
+      <div id="view-kategori" class="view-container" style="display: none;"></div>
+
+      <!-- View Pengaturan -->
+      <div id="view-pengaturan" class="view-container" style="display: none;"></div>
+    </div>
+  </main>
+</div>
+
+<!-- Mobile Bottom Navigation Bar -->
+<div class="mobile-nav">
+  <div class="mobile-nav-item active" onclick="setPage('dashboard', this)">
+    <i class="ti ti-dashboard"></i>
+    <span>Dashboard</span>
+  </div>
+  <div class="mobile-nav-item" onclick="setPage('transaksi', this)">
+    <i class="ti ti-list"></i>
+    <span>Transaksi</span>
+  </div>
+  <div class="mobile-nav-item" onclick="setPage('anggaran', this)">
+    <i class="ti ti-wallet"></i>
+    <span>Anggaran</span>
+  </div>
+  <div class="mobile-nav-item" onclick="setPage('tabungan', this)">
+    <i class="ti ti-pig"></i>
+    <span>Tabungan</span>
+  </div>
+  <div class="mobile-nav-item" onclick="setPage('statistik', this)">
+    <i class="ti ti-chart-bar"></i>
+    <span>Statistik</span>
+  </div>
+  <div class="mobile-nav-item" onclick="setPage('pengaturan', this)">
+    <i class="ti ti-settings"></i>
+    <span>Setelan</span>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal-overlay" onclick="handleOverlayClick(event)">
+  <div class="modal">
+    <div class="modal-title">Catat Transaksi Baru</div>
+    <div class="form-group">
+      <label class="form-label">Jenis</label>
+      <div class="type-toggle">
+        <button class="type-btn active-expense" id="btn-expense" onclick="setType('expense')">— Pengeluaran</button>
+        <button class="type-btn" id="btn-income" onclick="setType('income')">+ Pemasukan</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="inp-nama">Keterangan</label>
+      <input class="form-input" type="text" id="inp-nama" placeholder="cth: Gaji Mei, Makan Siang..."/>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="inp-amount">Jumlah (Rp)</label>
+      <input class="form-input" type="number" id="inp-amount" placeholder="0" min="0"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="inp-cat">Kategori</label>
+      <select class="form-input" id="inp-cat">
+        <option>Makanan & Minuman</option>
+        <option>Transportasi</option>
+        <option>Belanja</option>
+        <option>Kesehatan</option>
+        <option>Hiburan</option>
+        <option>Gaji</option>
+        <option>Investasi</option>
+        <option>Lainnya</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="inp-date">Tanggal</label>
+      <input class="form-input" type="date" id="inp-date"/>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Batal</button>
+      <button class="btn-save" onclick="saveTransaction()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css"/>
+<script>
+const defaultState = {
+  dark: true,
+  type: 'expense',
+  transactions: [
+    { id: 1, nama: "Gaji Bulanan", amount: 8500000, cat: "Gaji", date: "2026-05-01", type: "income" },
+    { id: 2, nama: "Makan Siang Resto", amount: 120000, cat: "Makanan & Minuman", date: "2026-05-02", type: "expense" },
+    { id: 3, nama: "Beli Kaos Baru", amount: 250000, cat: "Belanja", date: "2026-05-03", type: "expense" },
+    { id: 4, nama: "Bensin Motor", amount: 50000, cat: "Transportasi", date: "2026-05-04", type: "expense" },
+    { id: 5, nama: "Investasi Saham", amount: 1500000, cat: "Investasi", date: "2026-05-05", type: "income" },
+  ],
+  budgets: {
+    'Makanan & Minuman': { limit: 1500000 },
+    'Transportasi': { limit: 500000 },
+    'Belanja': { limit: 1000000 },
+    'Kesehatan': { limit: 300000 },
+    'Hiburan': { limit: 400000 },
+  },
+  catIcons: {
+    'Makanan & Minuman': { cls: 'food', icon: 'ti-bowl-chopsticks' },
+    'Transportasi': { cls: 'transport', icon: 'ti-bus' },
+    'Belanja': { cls: 'shop', icon: 'ti-shopping-bag' },
+    'Kesehatan': { cls: 'health', icon: 'ti-heart-rate-monitor' },
+    'Hiburan': { cls: 'shop', icon: 'ti-device-gamepad-2' },
+    'Gaji': { cls: 'salary', icon: 'ti-briefcase' },
+    'Investasi': { cls: 'salary', icon: 'ti-trending-up' },
+    'Lainnya': { cls: 'food', icon: 'ti-dots' },
+  },
+  telegram: {
+    enabled: false,
+    token: '',
+    chatId: ''
+  }
+};
+
+const savedState = localStorage.getItem('kasirku_state');
+const state = savedState ? JSON.parse(savedState) : defaultState;
+if (!state.telegram) {
+  state.telegram = {
+    enabled: false,
+    token: '',
+    chatId: ''
+  };
+}
+
+if (!state.savings) {
+  state.savings = [
+    { nama: 'Dana Darurat 🚨', target: 10000000, terkumpul: 3500000 },
+    { nama: 'Beli Laptop Pro 💻', target: 20000000, terkumpul: 8500000 },
+    { nama: 'Liburan Bali ✈️', target: 5000000, terkumpul: 1200000 }
+  ];
+}
+
+let currentPage = 'dashboard';
+
+function saveState() {
+  localStorage.setItem('kasirku_state', JSON.stringify(state));
+}
+
+function applyTheme() {
+  document.body.classList.toggle('light', !state.dark);
+  const pill = document.getElementById('toggle-pill');
+  const icon = document.getElementById('theme-icon');
+  const txt = document.getElementById('theme-text');
+  if (pill) pill.classList.toggle('on', !state.dark);
+  if (icon) icon.className = state.dark ? 'ti ti-moon' : 'ti ti-sun';
+  if (txt) txt.textContent = state.dark ? 'Dark Mode' : 'Light Mode';
+}
+
+const rp = n => 'Rp ' + Math.abs(Math.round(n)).toLocaleString('id-ID');
+
+function toggleTheme() {
+  state.dark = !state.dark;
+  applyTheme();
+  saveState();
+  if (currentPage === 'dashboard') {
+    renderChart();
+  } else if (currentPage === 'statistik') {
+    renderStatistikPage();
+  }
+}
+
+function setPage(page, el) {
+  currentPage = page;
+  
+  // Synchronize Desktop Active State
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const desktopIdx = { dashboard: 0, transaksi: 1, anggaran: 2, tabungan: 3, statistik: 4, kategori: 5, pengaturan: 6 }[page];
+  const dItems = document.querySelectorAll('.nav-item');
+  if (dItems && dItems[desktopIdx]) dItems[desktopIdx].classList.add('active');
+  
+  // Synchronize Mobile Bottom Nav Active State
+  document.querySelectorAll('.mobile-nav-item').forEach(m => m.classList.remove('active'));
+  const mItems = document.querySelectorAll('.mobile-nav-item');
+  if (mItems && mItems[desktopIdx]) mItems[desktopIdx].classList.add('active');
+
+  const titles = { 
+    dashboard:'Dashboard', 
+    transaksi:'Semua Transaksi', 
+    anggaran:'Anggaran', 
+    tabungan:'Celengan Impian', 
+    statistik:'Statistik', 
+    kategori:'Kategori',
+    pengaturan:'Pengaturan & Integrasi'
+  };
+  const subs = { 
+    dashboard:'Selamat datang kembali 👋', 
+    transaksi:'Riwayat transaksi lengkap', 
+    anggaran:'Kelola batas pengeluaran', 
+    tabungan:'Menabung dengan Celengan Ayam Tradisional 🐔', 
+    statistik:'Analisis keuangan Anda', 
+    kategori:'Kelola kategori',
+    pengaturan:'Integrasikan bot Telegram kustom Anda'
+  };
+  
+  const titleEl = document.getElementById('page-title');
+  const subEl = document.getElementById('page-sub');
+  if (titleEl) titleEl.textContent = titles[page] || page;
+  if (subEl) subEl.textContent = subs[page] || '';
+
+  // Hide all views
+  document.querySelectorAll('.view-container').forEach(v => v.style.display = 'none');
+  
+  // Show target view
+  const targetView = document.getElementById(`view-${page}`);
+  if (targetView) targetView.style.display = '';
+
+  if (page === 'transaksi') renderFullTxnList();
+  else if (page === 'dashboard') renderDashboard();
+  else if (page === 'anggaran') renderBudgetPage();
+  else if (page === 'tabungan') renderTabunganPage();
+  else if (page === 'statistik') renderStatistikPage();
+  else if (page === 'kategori') renderKategoriPage();
+  else if (page === 'pengaturan') renderPengaturanPage();
+  else renderDashboard();
+}
+
+function changePeriod(v) { 
+  renderDashboard(); 
+  saveState();
+}
+
+function openModal() {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('inp-date').value = today;
+  document.getElementById('inp-nama').value = '';
+  document.getElementById('inp-amount').value = '';
+  setType(state.type);
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+function handleOverlayClick(e) { if (e.target === document.getElementById('modal-overlay')) closeModal(); }
+
+function setType(t) {
+  state.type = t;
+  document.getElementById('btn-expense').className = 'type-btn' + (t==='expense'?' active-expense':'');
+  document.getElementById('btn-income').className = 'type-btn' + (t==='income'?' active-income':'');
+}
+
+function saveTransaction() {
+  const nama = document.getElementById('inp-nama').value.trim();
+  const amount = parseFloat(document.getElementById('inp-amount').value);
+  const cat = document.getElementById('inp-cat').value;
+  const date = document.getElementById('inp-date').value;
+  if (!nama) { document.getElementById('inp-nama').focus(); return; }
+  if (!amount || amount <= 0) { document.getElementById('inp-amount').focus(); return; }
+  
+  const newTxn = { id: Date.now(), nama, amount, cat, date, type: state.type };
+  state.transactions.unshift(newTxn);
+  saveState();
+
+  // Send real-time Telegram Bot notification if enabled
+  if (state.telegram && state.telegram.enabled && state.telegram.token && state.telegram.chatId) {
+    const typeLabel = state.type === 'income' ? '🟢 <b>Pemasukan Baru</b>' : '🔴 <b>Pengeluaran Baru</b>';
+    const msgText = `${typeLabel}\n\n` +
+                    `📝 <b>Keterangan:</b> ${nama}\n` +
+                    `💰 <b>Jumlah:</b> ${rp(amount)}\n` +
+                    `🏷️ <b>Kategori:</b> ${cat}\n` +
+                    `📅 <b>Tanggal:</b> ${date}\n\n` +
+                    `<i>Dikirim otomatis dari aplikasi Keuanganku</i>`;
+    sendTelegramMessage(msgText);
+  }
+
+  closeModal();
+  setPage(currentPage);
+}
+
+function getStats() {
+  const txns = state.transactions;
+  let income = 0, expense = 0;
+  txns.forEach(t => { if (t.type==='income') income += t.amount; else expense += t.amount; });
+  return { income, expense, saldo: income - expense, count: txns.length };
+}
+
+let dashboardBarChart = null;
+
+function renderDashboard() {
+  const s = getStats();
+  
+  // Update ATM Card
+  document.getElementById('stat-saldo').textContent = rp(s.saldo);
+  const saldoDesc = document.getElementById('saldo-desc');
+  if (s.saldo > 0) { saldoDesc.style.color = 'var(--success)'; saldoDesc.textContent = '↑ Surplus bulan ini'; }
+  else if (s.saldo < 0) { saldoDesc.style.color = 'var(--danger)'; saldoDesc.textContent = '↓ Defisit bulan ini'; }
+  else { saldoDesc.style.color = 'var(--text2)'; saldoDesc.textContent = '— Seimbang'; }
+  
+  // Update Right Panel Horizontal Cards
+  document.getElementById('stat-income').textContent = rp(s.income);
+  document.getElementById('stat-expense').textContent = rp(s.expense);
+  document.getElementById('income-count').textContent = state.transactions.filter(t=>t.type==='income').length + ' transaksi';
+  document.getElementById('expense-count').textContent = state.transactions.filter(t=>t.type==='expense').length + ' transaksi';
+  
+  // Update 4 Summary Cards at the top
+  if (document.getElementById('stat-income-card')) {
+    document.getElementById('stat-income-card').textContent = rp(s.income);
+    document.getElementById('income-count-card').textContent = state.transactions.filter(t=>t.type==='income').length + ' transaksi';
+  }
+  if (document.getElementById('stat-expense-card')) {
+    document.getElementById('stat-expense-card').textContent = rp(s.expense);
+    document.getElementById('expense-count-card').textContent = state.transactions.filter(t=>t.type==='expense').length + ' transaksi';
+  }
+  if (document.getElementById('stat-tabungan-card')) {
+    const totalTabungan = state.savings ? state.savings.reduce((sum, t) => sum + t.terkumpul, 0) : 0;
+    document.getElementById('stat-tabungan-card').textContent = rp(totalTabungan);
+    document.getElementById('tabungan-count-card').textContent = (state.savings ? state.savings.length : 0) + ' impian aktif';
+  }
+  if (document.getElementById('stat-saldo-card')) {
+    document.getElementById('stat-saldo-card').textContent = rp(s.saldo);
+    const saldoDescCard = document.getElementById('saldo-desc-card');
+    if (s.saldo > 0) { saldoDescCard.style.color = 'var(--success)'; saldoDescCard.textContent = '↑ Surplus'; }
+    else if (s.saldo < 0) { saldoDescCard.style.color = 'var(--danger)'; saldoDescCard.textContent = '↓ Defisit'; }
+    else { saldoDescCard.style.color = 'var(--text2)'; saldoDescCard.textContent = '— Seimbang'; }
+  }
+
+  document.getElementById('stat-count').textContent = s.count;
+
+  renderTxnList();
+  renderChart();
+  renderBudgetHome();
+  renderCategorySummary();
+}
+
+function renderTxnList() {
+  const el = document.getElementById('txn-list-home');
+  if (!el) return;
+  // Limit to compact last 3 transactions as requested
+  const recent = state.transactions.slice(0, 3);
+  if (!recent.length) { el.innerHTML = '<div class="empty-state">Belum ada transaksi.<br>Klik "Catat Transaksi" untuk mulai.</div>'; return; }
+  el.innerHTML = recent.map((t,i) => txnHTML(t, i*0.05)).join('');
+}
+
+function txnHTML(t, delay=0) {
+  const ci = state.catIcons[t.cat] || { cls:'food', icon:'ti-dots' };
+  const amt = t.type==='income' ? '+'+rp(t.amount) : '-'+rp(t.amount);
+  const amtCls = t.type==='income' ? 'income' : 'expense';
+  const dateStr = t.date ? new Date(t.date).toLocaleDateString('id-ID',{day:'numeric',month:'short'}) : '';
+  return `<div class="txn-item" style="animation-delay:${delay}s">
+    <div class="txn-icon ${ci.cls}"><i class="ti ${ci.icon}" aria-hidden="true"></i></div>
+    <div class="txn-meta">
+      <div class="txn-name">${t.nama}</div>
+      <div class="txn-cat">${t.cat}</div>
+    </div>
+    <div class="txn-right">
+      <div class="txn-amount ${amtCls}">${amt}</div>
+      <div class="txn-date">${dateStr}</div>
+    </div>
+  </div>`;
+}
+
+function renderChart() {
+  const el = document.getElementById('dashboard-bar-chart');
+  if (!el) return;
+  
+  const s = getStats();
+  const months = ['Jan','Feb','Mar','Apr','Mei','Jun'];
+  // Set dynamic income and expense data
+  const mockIncome = [3200000, 2800000, 4100000, 3600000, s.income || 0, 0];
+  const mockExpense = [2100000, 1900000, 2800000, 2200000, s.expense || 0, 0];
+  
+  if (dashboardBarChart) {
+    dashboardBarChart.destroy();
+  }
+  
+  const isLight = !state.dark;
+  const labelColor = isLight ? '#222' : 'rgba(255, 255, 255, 0.7)';
+  const tickColor = isLight ? '#555' : 'rgba(255, 255, 255, 0.5)';
+  const gridColor = isLight ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)';
+  
+  const ctx = el.getContext('2d');
+  dashboardBarChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: months,
+      datasets: [
+        {
+          label: 'Pemasukan',
+          data: mockIncome,
+          backgroundColor: '#FFC53E',
+          borderRadius: 4,
+          borderWidth: 0,
+        },
+        {
+          label: 'Pengeluaran',
+          data: mockExpense,
+          backgroundColor: 'rgba(255, 92, 92, 0.6)',
+          borderRadius: 4,
+          borderWidth: 0,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'bottom',
+          labels: {
+            color: labelColor,
+            font: {
+              family: 'Plus Jakarta Sans',
+              size: 10
+            },
+            boxWidth: 8,
+            boxHeight: 8,
+            padding: 10
+          }
+        },
+        tooltip: {
+          backgroundColor: 'rgba(22, 22, 26, 0.9)',
+          titleFont: { family: 'Plus Jakarta Sans', weight: '700' },
+          bodyFont: { family: 'Plus Jakarta Sans' },
+          borderColor: 'rgba(255, 197, 62, 0.2)',
+          borderWidth: 1,
+          padding: 8
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: {
+            color: tickColor,
+            font: { family: 'Plus Jakarta Sans', size: 9 }
+          }
+        },
+        y: {
+          grid: { color: gridColor },
+          ticks: {
+            color: tickColor,
+            font: { family: 'Plus Jakarta Sans', size: 9 },
+            callback: function(val) {
+              if (val >= 1000000) return (val / 1000000) + 'jt';
+              if (val >= 1000) return (val / 1000) + 'rb';
+              return val;
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+function renderBudgetHome() {
+  const el = document.getElementById('budget-list-home');
+  if (!el) return;
+  const budgets = state.budgets;
+  const items = Object.keys(budgets).slice(0,4);
+  if (!items.length) { el.innerHTML = '<div class="empty-state">Belum ada anggaran.</div>'; return; }
+  el.innerHTML = items.map(cat => {
+    const spent = state.transactions.filter(t=>t.cat===cat&&t.type==='expense').reduce((s,t)=>s+t.amount,0);
+    const limit = budgets[cat].limit;
+    const pct = Math.min(Math.round((spent/limit)*100), 100);
+    const color = pct > 85 ? 'var(--danger)' : pct > 60 ? 'var(--gold)' : 'var(--success)';
+    return `<div class="budget-item">
+      <div class="budget-row">
+        <div class="budget-name">${cat}</div>
+        <div class="budget-nums">${rp(spent)} / ${rp(limit)}</div>
+      </div>
+      <div class="progress-bg"><div class="progress-fill" style="width:${pct}%;background:${color}"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function renderCategorySummary() {
+  const el = document.getElementById('category-summary');
+  if (!el) return;
+  const cats = {};
+  state.transactions.filter(t=>t.type==='expense').forEach(t => { cats[t.cat] = (cats[t.cat]||0)+t.amount; });
+  const sorted = Object.entries(cats).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  if (!sorted.length) { el.innerHTML = '<div class="empty-state">Data pengeluaran per kategori muncul di sini.</div>'; return; }
+  const total = sorted.reduce((s,[,v])=>s+v,0);
+  el.innerHTML = sorted.map(([cat,val]) => {
+    const pct = Math.round((val/total)*100);
+    const ci = state.catIcons[cat] || { cls:'food', icon:'ti-dots' };
+    return `<div style="display:flex;align-items:center;gap:10px;">
+      <div class="txn-icon ${ci.cls}" style="width:28px;height:28px;font-size:12px;flex-shrink:0;border-radius:7px;">
+        <i class="ti ${ci.icon}" aria-hidden="true"></i>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+          <span style="font-size:12px;font-weight:500;">${cat}</span>
+          <span style="font-size:11px;color:var(--text2);font-family:var(--mono);">${pct}%</span>
+        </div>
+        <div class="progress-bg"><div class="progress-fill" style="width:${pct}%;background:var(--gold);"></div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderFullTxnList() {
+  const content = document.getElementById('view-transaksi');
+  if (!content) return;
+  
+  if (!state.transactions.length) {
+    content.innerHTML = `<div class="card" style="margin-top:0"><div class="empty-state" style="padding:60px 0;">
+      <i class="ti ti-receipt" style="font-size:36px;color:var(--text3);display:block;margin-bottom:12px;" aria-hidden="true"></i>
+      Belum ada transaksi dicatat.
+    </div></div>`;
+    return;
+  }
+  
+  const rows = state.transactions.map((t, idx) => {
+    const ci = state.catIcons[t.cat] || { cls: 'food', icon: 'ti-dots' };
+    const dateStr = t.date ? new Date(t.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+    const amountStr = t.type === 'income' ? '+' + rp(t.amount) : '-' + rp(t.amount);
+    const amountCls = t.type === 'income' ? 'income' : 'expense';
+    const badgeCls = t.type === 'income' ? 'income' : 'expense';
+    const badgeText = t.type === 'income' ? 'Pemasukan' : 'Pengeluaran';
+
+    return `
+      <tr>
+        <td style="width: 50px;">
+          <div class="txn-icon ${ci.cls}" style="margin: 0; width: 32px; height: 32px; font-size: 13px;">
+            <i class="ti ${ci.icon}"></i>
+          </div>
+        </td>
+        <td><span style="font-weight: 500;">${dateStr}</span></td>
+        <td><span style="font-weight: 600; color: var(--text);">${t.nama}</span></td>
+        <td><span style="color: var(--text2); font-weight: 500;">${t.cat}</span></td>
+        <td><span class="badge-type ${badgeCls}">${badgeText}</span></td>
+        <td><span class="stat-value ${amountCls}" style="font-size: 13px; font-weight: 700;">${amountStr}</span></td>
+        <td style="text-align: right; width: 60px;">
+          <button class="btn-delete-txn" onclick="deleteTransaction(${idx})" title="Hapus Transaksi">
+            <i class="ti ti-trash"></i>
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  content.innerHTML = `
+    <div class="card" style="margin-top: 0; padding: 20px;">
+      <div class="card-header" style="margin-bottom: 16px;">
+        <div class="card-title">Semua Transaksi (${state.transactions.length})</div>
+      </div>
+      <div class="table-responsive">
+        <table class="premium-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>Tanggal</th>
+              <th>Nama Transaksi</th>
+              <th>Kategori</th>
+              <th>Jenis</th>
+              <th>Jumlah</th>
+              <th style="text-align: right;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function deleteTransaction(index) {
+  if (confirm("Apakah Anda yakin ingin menghapus transaksi ini?")) {
+    state.transactions.splice(index, 1);
+    saveState();
+    if (currentPage === 'dashboard') {
+      renderDashboard();
+    } else if (currentPage === 'transaksi') {
+      renderFullTxnList();
+    }
+  }
+}
+
+function renderBudgetPage() {
+  const content = document.getElementById('view-anggaran');
+  if (!content) return;
+
+  const budgets = state.budgets;
+  const items = Object.keys(budgets);
+
+  const budgetRows = items.map(cat => {
+    const spent = state.transactions.filter(t => t.cat === cat && t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+    const limit = budgets[cat].limit;
+    const pct = Math.min(Math.round((spent / limit) * 100), 100);
+    const color = pct > 85 ? 'var(--danger)' : pct > 60 ? 'var(--gold)' : 'var(--success)';
+    return `
+      <div style="padding-bottom: 14px; border-bottom: 0.5px solid var(--border);">
+        <div class="budget-row" style="display: flex; justify-content: space-between; align-items: center;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div class="budget-name" style="font-size: 13px; font-weight: 600;">${cat}</div>
+            <button onclick="editBudgetLimit('${cat.replace(/'/g, "\\'")}')" title="Ubah Batas" style="background: transparent; border: none; color: var(--text3); cursor: pointer; padding: 2px 4px; border-radius: 4px; transition: all var(--transition);">
+              <i class="ti ti-edit" style="font-size: 11px;"></i>
+            </button>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 11px; color: var(--text2); font-family: var(--mono);">${rp(spent)} / ${rp(limit)}</span>
+            <span style="font-size: 11px; font-weight: 600; color: ${color}">${pct}%</span>
+          </div>
+        </div>
+        <div class="progress-bg" style="margin-top: 6px; height: 6px;"><div class="progress-fill" style="width: ${pct}%; background: ${color}"></div></div>
+      </div>
+    `;
+  }).join('');
+
+  content.innerHTML = `
+    <div class="card" style="margin-top: 0; max-width: 540px; display: flex; flex-direction: column; gap: 16px;">
+      <div class="card-header" style="margin-bottom: 0;">
+        <div class="card-title">Kelola Anggaran Bulanan 📊</div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        ${budgetRows}
+      </div>
+      <div style="margin-top: 6px; font-size: 11px; color: var(--text3);">💡 Ubah batas pengeluaran kategori bulanan Anda secara instan menggunakan ikon edit.</div>
+    </div>
+  `;
+}
+
+function editBudgetLimit(cat) {
+  const currentLimit = state.budgets[cat]?.limit || 0;
+  const newLimitStr = prompt(`Ubah batas anggaran bulanan untuk kategori "${cat}" menjadi (Rp):`, currentLimit);
+  if (newLimitStr === null) return;
+  const newLimit = parseInt(newLimitStr.replace(/[^0-9]/g, ''));
+  if (isNaN(newLimit) || newLimit <= 0) {
+    alert('Masukkan nominal batas anggaran yang valid.');
+    return;
+  }
+  
+  state.budgets[cat] = { limit: newLimit };
+  saveState();
+  renderBudgetPage();
+  if (currentPage === 'dashboard') {
+    renderDashboard();
+  }
+}
+
+function addMoneyToSaving(idx) {
+  const goal = state.savings[idx];
+  const amountStr = prompt(`Masukkan nominal uang yang ingin Anda tabung untuk "${goal.nama}" (Rp):`);
+  if (amountStr === null) return;
+  const amount = parseInt(amountStr.replace(/[^0-9]/g, ''));
+  if (isNaN(amount) || amount <= 0) {
+    alert('Masukkan nominal uang tabungan yang valid.');
+    return;
+  }
+
+  goal.terkumpul += amount;
+  saveState();
+  if (currentPage === 'anggaran') {
+    renderBudgetPage();
+  } else if (currentPage === 'tabungan') {
+    renderTabunganPage();
+  }
+  if (currentPage === 'dashboard') {
+    renderDashboard();
+  }
+}
+
+let activeSavingIdx = 0;
+
+function renderTabunganPage() {
+  const content = document.getElementById('view-tabungan');
+  if (!content) return;
+
+  if (!state.savings || !state.savings.length) {
+    content.innerHTML = `
+      <div class="card" style="margin-top: 0;">
+        <div class="empty-state" style="padding: 60px 0;">
+          <i class="ti ti-pig" style="font-size: 48px; color: var(--gold); display: block; margin-bottom: 16px;"></i>
+          <h3>Belum Ada Celengan Impian</h3>
+          <p style="color: var(--text2); margin-bottom: 20px; font-size: 13px;">Buat celengan pertama Anda untuk mulai menabung menggunakan Celengan Ayam!</p>
+          <button class="btn-add" onclick="createInitialSavingGoal()">Buat Celengan Pertama</button>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  if (activeSavingIdx >= state.savings.length) {
+    activeSavingIdx = 0;
+  }
+
+  const focusedGoal = state.savings[activeSavingIdx];
+  const pct = Math.min(Math.round((focusedGoal.terkumpul / focusedGoal.target) * 100), 100);
+  const fillY = 170 - (pct / 100) * 124;
+
+  const selectOptions = state.savings.map((s, idx) => `
+    <option value="${idx}" ${idx === activeSavingIdx ? 'selected' : ''}>${s.nama} (${Math.round((s.terkumpul/s.target)*100)}%)</option>
+  `).join('');
+
+  const leftColHTML = `
+    <div class="card" style="margin-top: 0; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 20px; padding: 24px;">
+      <div>
+        <div style="font-size: 10px; color: var(--gold); text-transform: uppercase; font-weight: 700; letter-spacing: 1px; margin-bottom: 4px;">Pilih Celengan Impian</div>
+        <select class="form-input" style="width: 240px; text-align: center; font-weight: 600;" onchange="setActiveSavingGoal(this.value)">
+          ${selectOptions}
+        </select>
+      </div>
+
+      <div style="position: relative; margin: 15px 0;">
+        <svg width="300" height="300" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 10px 30px rgba(255, 197, 62, 0.22)); transition: all 0.3s ease;">
+          <defs>
+            <clipPath id="chicken-body-clip">
+              <circle cx="100" cy="108" r="62" />
+            </clipPath>
+            <linearGradient id="gold-liquid-grad" x1="0%" y1="100%" x2="0%" y2="0%">
+              <stop offset="0%" stop-color="#FF5C5C" />
+              <stop offset="50%" stop-color="#FFC53E" />
+              <stop offset="100%" stop-color="#FFEFA6" />
+            </linearGradient>
+          </defs>
+          <path d="M 85 30 C 85 10, 100 10, 100 25 C 105 10, 120 10, 120 28 C 125 15, 135 20, 130 38" fill="#FF4B4B" stroke="#1c1c22" stroke-width="3" stroke-linejoin="round" />
+          <path d="M 38 108 C 15 90, 10 130, 38 140 Z" fill="#FFEFA6" stroke="#1c1c22" stroke-width="3" />
+          <path d="M 32 98 C 5 80, 0 110, 32 125 Z" fill="#FFC53E" stroke="#1c1c22" stroke-width="3" />
+          <path d="M 75 168 L 70 185 L 60 185 M 70 185 L 78 185" stroke="#FFC53E" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+          <path d="M 125 168 L 130 185 L 140 185 M 130 185 L 122 185" stroke="#FFC53E" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+          <circle cx="100" cy="108" r="62" fill="var(--bg2)" stroke="#1c1c22" stroke-width="4.5" />
+          <g clip-path="url(#chicken-body-clip)">
+            <rect x="30" y="${fillY}" width="140" height="130" fill="url(#gold-liquid-grad)" style="transition: y 0.8s cubic-bezier(0.4, 0, 0.2, 1);" />
+            <path d="M 30 ${fillY} Q 65 ${fillY - 5}, 100 ${fillY} T 170 ${fillY}" fill="url(#gold-liquid-grad)" style="opacity: 0.8; transition: d 0.8s, y 0.8s;" />
+          </g>
+          <path d="M 85 105 C 75 110, 75 130, 95 135 C 115 135, 120 115, 105 105 Z" fill="rgba(255, 255, 255, 0.07)" stroke="#1c1c22" stroke-width="3.5" />
+          <path d="M 158 92 L 175 100 L 158 106 Z" fill="#FFC53E" stroke="#1c1c22" stroke-width="3" stroke-linejoin="round" />
+          <circle cx="140" cy="85" r="7" fill="#1c1c22" />
+          <circle cx="142" cy="83" r="2.5" fill="#fff" />
+          <circle cx="144" cy="98" r="8" fill="#FF5C5C" opacity="0.4" />
+          <rect x="88" y="42" width="24" height="6" rx="2" fill="#1c1c22" stroke="#FFC53E" stroke-width="1.5" />
+        </svg>
+        <div style="position: absolute; top: 58%; left: 50%; transform: translate(-50%, -50%); font-weight: 900; font-size: 32px; color: ${pct > 45 ? '#111' : 'var(--text)'}; font-family: var(--mono); text-shadow: ${pct > 45 ? 'none' : '0 2px 8px rgba(0,0,0,0.5)'}; transition: color 0.5s;">
+          ${pct}%
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 6px; width: 100%;">
+        <div style="font-size: 16px; font-weight: 800; color: var(--text);">${focusedGoal.nama}</div>
+        <div style="font-size: 13px; color: var(--gold); font-weight: 700; font-family: var(--mono);">
+          ${rp(focusedGoal.terkumpul)} <span style="color: var(--text3); font-weight: 500; font-size: 11px;">/ ${rp(focusedGoal.target)}</span>
+        </div>
+      </div>
+
+      <button class="btn-add" style="width: 100%; height: 42px; font-size: 13px; font-weight: 700; background: var(--gold); color: #111; justify-content: center; box-shadow: 0 4px 14px rgba(255, 197, 62, 0.2);" onclick="depositToActiveGoal()">
+        <i class="ti ti-coin" style="font-size: 16px;"></i> Masukkan Koin / Tabung Sekarang
+      </button>
+    </div>
+  `;
+
+  const savingsGoalsList = state.savings.map((s, idx) => {
+    const goalPct = Math.min(Math.round((s.terkumpul / s.target) * 100), 100);
+    return `
+      <div style="padding: 14px; background: var(--bg3); border: 1px solid ${idx === activeSavingIdx ? 'var(--gold)' : 'var(--border)'}; border-radius: var(--radius-md); display: flex; flex-direction: column; gap: 10px; cursor: pointer; transition: all var(--transition);" onclick="setActiveSavingGoal(${idx})">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 13px; font-weight: 700; color: var(--text);">${s.nama}</span>
+              ${idx === activeSavingIdx ? '<span style="font-size: 9px; padding: 2px 6px; background: rgba(255, 197, 62, 0.15); color: var(--gold); border-radius: 4px; font-weight: 700;">DIPILIH</span>' : ''}
+            </div>
+            <div style="font-size: 11px; color: var(--text2); font-family: var(--mono); margin-top: 2px;">
+              ${rp(s.terkumpul)} dari ${rp(s.target)}
+            </div>
+          </div>
+          <div style="display: flex; gap: 6px;" onclick="event.stopPropagation();">
+            <button class="btn-save" onclick="addMoneyToSaving(${idx})" title="Menabung" style="padding: 4px 10px; font-size: 10px; height: 24px; border-radius: 6px; display: flex; align-items: center; gap: 4px; background: var(--gold); border: none; font-weight: 600; color: #111; cursor: pointer;">
+              <i class="ti ti-plus"></i> Tabung
+            </button>
+            <button onclick="deleteSavingGoal(${idx})" title="Hapus Impian" style="background: transparent; border: 1px solid var(--border); color: var(--text3); cursor: pointer; padding: 4px; border-radius: 6px; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; transition: all var(--transition);">
+              <i class="ti ti-trash" style="font-size: 12px;"></i>
+            </button>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div class="progress-bg" style="flex: 1; height: 8px;"><div class="progress-fill" style="width: ${goalPct}%; background: ${idx === activeSavingIdx ? 'var(--gold)' : 'var(--text2)'};"></div></div>
+          <span style="font-size: 11px; font-weight: 700; color: ${idx === activeSavingIdx ? 'var(--gold)' : 'var(--text2)'}; font-family: var(--mono);">${goalPct}%</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  const rightColHTML = `
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+      <div class="card" style="margin-top: 0; display: flex; flex-direction: column; gap: 16px;">
+        <div class="card-header" style="margin-bottom: 0;">
+          <div class="card-title">Daftar Celengan Impian Aktif 🐷</div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          ${savingsGoalsList}
+        </div>
+      </div>
+
+      <div class="card" style="display: flex; flex-direction: column; gap: 14px;">
+        <div class="card-header" style="margin-bottom: 0;">
+          <div class="card-title" style="font-size: 13px;">Buat Celengan Baru ✨</div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <div>
+            <label class="form-label" for="saving-name-input-tab">Nama Impian</label>
+            <input class="form-input" type="text" id="saving-name-input-tab" placeholder="cth: Umroh 🕋, Motor Baru 🏍️, Dana Menikah 💍..."/>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <div style="flex: 1;">
+              <label class="form-label" for="saving-target-input-tab">Target Nominal (Rp)</label>
+              <input class="form-input" type="number" id="saving-target-input-tab" placeholder="cth: 15000000"/>
+            </div>
+            <div style="flex: 1;">
+              <label class="form-label" for="saving-init-input-tab">Saldo Awal (Rp)</label>
+              <input class="form-input" type="number" id="saving-init-input-tab" placeholder="0"/>
+            </div>
+          </div>
+          <button class="btn-add" style="margin-top: 6px; width: 100%; justify-content: center;" onclick="addNewSavingGoalFromTab()">
+            <i class="ti ti-plus"></i> Tambah Celengan Baru
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  content.innerHTML = `
+    <div class="two-col" style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 20px; align-items: start;">
+      ${leftColHTML}
+      ${rightColHTML}
+    </div>
+  `;
+}
+
+function setActiveSavingGoal(val) {
+  activeSavingIdx = parseInt(val);
+  renderTabunganPage();
+}
+
+function depositToActiveGoal() {
+  addMoneyToSaving(activeSavingIdx);
+}
+
+function createInitialSavingGoal() {
+  const name = prompt("Masukkan nama impian pertama Anda (cth: Dana Darurat):");
+  if (!name) return;
+  const targetStr = prompt("Masukkan target nominal tabungan (Rp):");
+  if (!targetStr) return;
+  const target = parseInt(targetStr.replace(/[^0-9]/g, ''));
+  if (isNaN(target) || target <= 0) {
+    alert("Masukkan nominal target yang valid.");
+    return;
+  }
+  
+  state.savings = [{ nama: name, target: target, terkumpul: 0 }];
+  activeSavingIdx = 0;
+  saveState();
+  renderTabunganPage();
+  if (currentPage === 'dashboard') {
+    renderDashboard();
+  }
+}
+
+function addNewSavingGoalFromTab() {
+  const name = document.getElementById('saving-name-input-tab').value.trim();
+  const target = parseInt(document.getElementById('saving-target-input-tab').value);
+  const init = parseInt(document.getElementById('saving-init-input-tab').value) || 0;
+
+  if (!name) {
+    alert('Masukkan nama impian Anda.');
+    document.getElementById('saving-name-input-tab').focus();
+    return;
+  }
+  if (isNaN(target) || target <= 0) {
+    alert('Masukkan target nominal yang valid.');
+    document.getElementById('saving-target-input-tab').focus();
+    return;
+  }
+
+  state.savings.push({
+    nama: name,
+    target: target,
+    terkumpul: Math.max(0, init)
+  });
+
+  activeSavingIdx = state.savings.length - 1;
+  saveState();
+  renderTabunganPage();
+  if (currentPage === 'dashboard') {
+    renderDashboard();
+  }
+}
+
+let cashflowLineChart = null;
+let categoryDoughnutChart = null;
+
+function renderStatistikPage() {
+  const content = document.getElementById('view-statistik');
+  if (!content) return;
+  
+  const s = getStats();
+  const ratio = s.income > 0 ? Math.round((s.expense/s.income)*100) : 0;
+  const isLight = !state.dark;
+  const labelColor = isLight ? '#222' : 'rgba(255, 255, 255, 0.7)';
+  const tickColor = isLight ? '#555' : 'rgba(255, 255, 255, 0.5)';
+  const gridColor = isLight ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)';
+  
+  content.innerHTML = `
+    <div class="two-col" style="display: grid; grid-template-columns: 1fr 360px; gap: 20px; align-items: start;">
+      <!-- Kiri: Cashflow & Stats Card -->
+      <div style="display: flex; flex-direction: column; gap: 20px;">
+        <!-- Ringkasan Rasio Row -->
+        <div class="ratio-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
+          <div class="card" style="padding: 16px; background: rgba(255,197,62,0.02); border: 1px solid var(--border);">
+            <div class="stat-label" style="font-size: 10px; text-transform: uppercase; color: var(--text2); letter-spacing: 0.5px; margin-bottom: 6px;">Rasio Pengeluaran</div>
+            <div class="stat-value" style="color:${ratio > 80 ? 'var(--danger)' : ratio > 60 ? 'var(--gold)' : 'var(--success)'}; font-size: 24px; font-weight: 800;">${ratio}%</div>
+            <div style="font-size: 10px; color: var(--text2); margin-top: 4px;">dari total pemasukan</div>
+            <div class="progress-bg" style="margin-top: 10px; height: 6px;"><div class="progress-fill" style="width:${Math.min(ratio, 100)}%; background:${ratio > 80 ? 'var(--danger)' : ratio > 60 ? 'var(--gold)' : 'var(--success)'}"></div></div>
+          </div>
+          <div class="card" style="padding: 16px; background: rgba(74,222,128,0.02); border: 1px solid var(--border);">
+            <div class="stat-label" style="font-size: 10px; text-transform: uppercase; color: var(--text2); letter-spacing: 0.5px; margin-bottom: 6px;">Tingkat Tabungan</div>
+            <div class="stat-value" style="color: var(--success); font-size: 24px; font-weight: 800;">${Math.max(0, 100 - ratio)}%</div>
+            <div style="font-size: 10px; color: var(--text2); margin-top: 4px;">berhasil dialokasikan</div>
+            <div class="progress-bg" style="margin-top: 10px; height: 6px;"><div class="progress-fill" style="width:${Math.max(0, 100 - ratio)}%; background: var(--success)"></div></div>
+          </div>
+        </div>
+
+        <!-- Cashflow Trend Card -->
+        <div class="card">
+          <div class="card-header" style="margin-bottom: 16px;">
+            <div class="card-title" style="font-size: 14px; font-weight: 700;">Grafik Cashflow (Trend Uang Naik Turun)</div>
+          </div>
+          <div style="height: 220px; position: relative; width: 100%;">
+            <canvas id="cashflow-line-chart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Kanan: Breakdown Kategori Pengeluaran -->
+      <div style="display: flex; flex-direction: column; gap: 20px;">
+        <div class="card">
+          <div class="card-header" style="margin-bottom: 16px;">
+            <div class="card-title" style="font-size: 14px; font-weight: 700;">Distribusi Kategori Pengeluaran</div>
+          </div>
+          <div style="height: 220px; position: relative; width: 100%; display: flex; align-items: center; justify-content: center;">
+            <canvas id="category-doughnut-chart"></canvas>
+          </div>
+          <div id="doughnut-legend" style="display: flex; flex-direction: column; gap: 6px; margin-top: 16px; font-size: 10px;"></div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // --- Render Cashflow Chart (Line Chart) ---
+  const lineEl = document.getElementById('cashflow-line-chart');
+  if (lineEl) {
+    const months = ['Jan','Feb','Mar','Apr','Mei','Jun'];
+    const mockBalance = [1100000, 2000000, 3300000, 4700000, 4700000 + s.saldo, 4700000 + s.saldo];
+    
+    if (cashflowLineChart) cashflowLineChart.destroy();
+    
+    const ctx = lineEl.getContext('2d');
+    cashflowLineChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: months,
+        datasets: [{
+          label: 'Saldo Kas',
+          data: mockBalance,
+          borderColor: '#FFC53E',
+          backgroundColor: 'rgba(255, 197, 62, 0.05)',
+          fill: true,
+          tension: 0.4,
+          borderWidth: 2,
+          pointBackgroundColor: '#FFC53E',
+          pointRadius: 3
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: 'rgba(22, 22, 26, 0.9)',
+            titleFont: { family: 'Plus Jakarta Sans', weight: '700' },
+            bodyFont: { family: 'Plus Jakarta Sans' },
+            borderColor: 'rgba(255, 197, 62, 0.2)',
+            borderWidth: 1,
+            padding: 8
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: {
+              color: tickColor,
+              font: { family: 'Plus Jakarta Sans', size: 9 }
+            }
+          },
+          y: {
+            grid: { color: gridColor },
+            ticks: {
+              color: tickColor,
+              font: { family: 'Plus Jakarta Sans', size: 9 },
+              callback: function(val) {
+                if (val >= 1000000) return (val / 1000000) + 'jt';
+                if (val >= 1000) return (val / 1000) + 'rb';
+                return val;
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // --- Render Category Doughnut Chart ---
+  const doughnutEl = document.getElementById('category-doughnut-chart');
+  if (doughnutEl) {
+    const catTotals = {};
+    state.transactions.filter(t => t.type === 'expense').forEach(t => {
+      catTotals[t.cat] = (catTotals[t.cat] || 0) + t.amount;
+    });
+
+    let labels = Object.keys(catTotals);
+    let data = Object.values(catTotals);
+    
+    if (labels.length === 0) {
+      labels = ['Makan', 'Bensin', 'Nongkrong', 'Belanja'];
+      data = [1200000, 800000, 600000, 400000];
+    }
+    
+    const totalExp = data.reduce((sum, val) => sum + val, 0);
+    const percentages = data.map(val => Math.round((val / totalExp) * 100));
+
+    if (categoryDoughnutChart) categoryDoughnutChart.destroy();
+    
+    const ctx = doughnutEl.getContext('2d');
+    
+    const colorPalette = [
+      '#FFC53E',
+      'rgba(255, 197, 62, 0.7)',
+      'rgba(255, 197, 62, 0.4)',
+      '#FFE194',
+      '#8D6E63',
+      '#5D4037'
+    ];
+
+    categoryDoughnutChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: labels,
+        datasets: [{
+          data: data,
+          backgroundColor: colorPalette.slice(0, labels.length),
+          borderWidth: 1,
+          borderColor: isLight ? '#fff' : '#1e1e24'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: 'rgba(22, 22, 26, 0.9)',
+            titleFont: { family: 'Plus Jakarta Sans', weight: '700' },
+            bodyFont: { family: 'Plus Jakarta Sans' },
+            borderColor: 'rgba(255, 197, 62, 0.2)',
+            borderWidth: 1,
+            padding: 8,
+            callbacks: {
+              label: function(context) {
+                const val = context.raw;
+                const pct = Math.round((val / totalExp) * 100);
+                return `${context.label}: ${rp(val)} (${pct}%)`;
+              }
+            }
+          }
+        },
+        cutout: '70%'
+      }
+    });
+
+    const legendEl = document.getElementById('doughnut-legend');
+    if (legendEl) {
+      legendEl.innerHTML = labels.map((label, idx) => {
+        const color = colorPalette[idx % colorPalette.length];
+        return `
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div style="width: 8px; height: 8px; border-radius: 50%; background: ${color};"></div>
+              <span style="color: var(--text); font-weight: 500;">${label}</span>
+            </div>
+            <span style="color: var(--text2); font-weight: 600;">${percentages[idx]}% (${rp(data[idx])})</span>
+          </div>
+        `;
+      }).join('');
+    }
+  }
+}
+
+function renderKategoriPage() {
+  const content = document.getElementById('view-kategori');
+  const catStats = {};
+  state.transactions.forEach(t => {
+    if (!catStats[t.cat]) {
+      catStats[t.cat] = { count: 0, expense: 0, income: 0 };
+    }
+    catStats[t.cat].count++;
+    if (t.type === 'income') {
+      catStats[t.cat].income += t.amount;
+    } else {
+      catStats[t.cat].expense += t.amount;
+    }
+  });
+
+  const categories = Object.keys(state.catIcons);
+
+  let html = `<div style="display:flex;flex-direction:column;gap:20px;width:100%;">
+    <div class="card" style="margin-top:0;">
+      <div class="card-header">
+        <div class="card-title">Semua Kategori (${categories.length})</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(240px, 1fr));gap:14px;">`;
+
+  categories.forEach(cat => {
+    const iconData = state.catIcons[cat] || { cls: 'food', icon: 'ti-dots' };
+    const stats = catStats[cat] || { count: 0, expense: 0, income: 0 };
+    html += `
+        <div class="card" style="padding:16px;border-color:var(--border);background:var(--bg3);display:flex;flex-direction:column;gap:12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div class="txn-icon ${iconData.cls}" style="width:36px;height:36px;font-size:16px;border-radius:10px;">
+                <i class="ti ${iconData.icon}" aria-hidden="true"></i>
+              </div>
+              <div>
+                <div style="font-weight:600;font-size:13px;">${cat}</div>
+                <div style="font-size:10px;color:var(--text2);">${stats.count} Transaksi</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:4px;">
+              <button class="btn-action-cat" onclick="editCategory('${cat.replace(/'/g, "\\'")}')" title="Ubah Nama" style="background:transparent;border:none;color:var(--text3);cursor:pointer;padding:6px;border-radius:6px;transition:all var(--transition);">
+                <i class="ti ti-edit" style="font-size:14px;"></i>
+              </button>
+              <button class="btn-action-cat" onclick="deleteCategory('${cat.replace(/'/g, "\\'")}')" title="Hapus Kategori" style="background:transparent;border:none;color:var(--text3);cursor:pointer;padding:6px;border-radius:6px;transition:all var(--transition);">
+                <i class="ti ti-trash" style="font-size:14px;"></i>
+              </button>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;border-top:0.5px solid var(--border);padding-top:10px;font-size:11px;">
+            <div style="display:flex;justify-content:space-between;">
+              <span style="color:var(--text2);">Pemasukan:</span>
+              <span style="color:var(--success);font-family:var(--mono);">${rp(stats.income)}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;">
+              <span style="color:var(--text2);">Pengeluaran:</span>
+              <span style="color:var(--danger);font-family:var(--mono);">${rp(stats.expense)}</span>
+            </div>
+          </div>
+        </div>`;
+  });
+
+  html += `
+      </div>
+    </div>
+    
+    <div class="card">
+      <div class="card-header"><div class="card-title">Tambah Kategori Baru</div></div>
+      <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+        <div style="flex:1;min-width:200px;">
+          <label class="form-label" for="new-cat-name">Nama Kategori</label>
+          <input class="form-input" type="text" id="new-cat-name" placeholder="cth: Pendidikan, Pajak..."/>
+        </div>
+        <div style="width:180px;">
+          <label class="form-label" for="new-cat-icon">Icon Tabler</label>
+          <select class="form-input" id="new-cat-icon">
+            <option value="ti-book">ti-book (Buku)</option>
+            <option value="ti-car">ti-car (Mobil)</option>
+            <option value="ti-home">ti-home (Rumah)</option>
+            <option value="ti-gift">ti-gift (Hadiah)</option>
+            <option value="ti-shirt">ti-shirt (Pakaian)</option>
+            <option value="ti-device-tv">ti-device-tv (TV/Film)</option>
+            <option value="ti-users">ti-users (Keluarga)</option>
+            <option value="ti-coin">ti-coin (Koin)</option>
+            <option value="ti-dots">ti-dots (Lainnya)</option>
+          </select>
+        </div>
+        <div style="width:140px;">
+          <label class="form-label" for="new-cat-color">Gaya Warna</label>
+          <select class="form-input" id="new-cat-color">
+            <option value="food">Emas/Kuning</option>
+            <option value="salary">Hijau</option>
+            <option value="shop">Merah</option>
+            <option value="transport">Biru</option>
+            <option value="health">Ungu</option>
+          </select>
+        </div>
+        <button class="btn-add" style="height:38px;padding:0 20px;" onclick="addNewCategory()">
+          <i class="ti ti-plus" aria-hidden="true"></i> Tambah
+        </button>
+      </div>
+    </div>
+  </div>`;
+  
+  content.innerHTML = html;
+}
+
+function addNewCategory() {
+  const name = document.getElementById('new-cat-name').value.trim();
+  const icon = document.getElementById('new-cat-icon').value;
+  const cls = document.getElementById('new-cat-color').value;
+  
+  if (!name) {
+    document.getElementById('new-cat-name').focus();
+    return;
+  }
+  
+  if (state.catIcons[name]) {
+    alert('Kategori dengan nama tersebut sudah ada.');
+    return;
+  }
+  
+  state.catIcons[name] = { cls, icon };
+  
+  populateCategoryDropdown();
+  saveState();
+  renderKategoriPage();
+}
+
+function deleteCategory(name) {
+  if (name === 'Lainnya') {
+    alert('Kategori "Lainnya" tidak dapat dihapus sebagai cadangan default.');
+    return;
+  }
+  if (confirm(`Apakah Anda yakin ingin menghapus kategori "${name}"? Semua transaksi dengan kategori ini akan dialihkan ke kategori "Lainnya".`)) {
+    state.transactions.forEach(t => {
+      if (t.cat === name) t.cat = 'Lainnya';
+    });
+    delete state.catIcons[name];
+    
+    populateCategoryDropdown();
+    saveState();
+    renderKategoriPage();
+    if (currentPage === 'dashboard') {
+      renderDashboard();
+    }
+  }
+}
+
+function editCategory(oldName) {
+  const newName = prompt(`Ubah nama kategori "${oldName}" menjadi:`, oldName);
+  if (newName === null) return;
+  const trimmedName = newName.trim();
+  if (!trimmedName) {
+    alert('Nama kategori tidak boleh kosong.');
+    return;
+  }
+  if (trimmedName === oldName) return;
+  if (state.catIcons[trimmedName]) {
+    alert('Kategori dengan nama tersebut sudah ada.');
+    return;
+  }
+  
+  const catData = state.catIcons[oldName];
+  state.catIcons[trimmedName] = catData;
+  delete state.catIcons[oldName];
+  
+  state.transactions.forEach(t => {
+    if (t.cat === oldName) t.cat = trimmedName;
+  });
+  
+  populateCategoryDropdown();
+  saveState();
+  renderKategoriPage();
+  if (currentPage === 'dashboard') {
+    renderDashboard();
+  }
+}
+
+function populateCategoryDropdown() {
+  const sel = document.getElementById('inp-cat');
+  if (!sel) return;
+  sel.innerHTML = Object.keys(state.catIcons).map(cat => `<option>${cat}</option>`).join('');
+}
+
+function renderPengaturanPage() {
+  const content = document.getElementById('view-pengaturan');
+  if (!content) return;
+  
+  content.innerHTML = `
+    <div class="two-col" style="grid-template-columns: 1fr 360px;">
+      <!-- Left Side: Config Card -->
+      <div class="card">
+        <div class="card-header" style="margin-bottom: 24px;">
+          <div class="card-title" style="font-size: 15px; font-weight: 700; color: var(--gold); display: flex; align-items: center; gap: 8px;">
+            <i class="ti ti-brand-telegram" style="font-size: 20px;"></i>
+            Integrasi Bot Telegram
+          </div>
+        </div>
+        
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label class="form-label" style="font-weight: 600;">Status Integrasi</label>
+          <div style="display: flex; align-items: center; justify-content: space-between; background: var(--bg3); padding: 12px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+            <span style="font-size: 13px; color: var(--text);">Kirim Notifikasi Transaksi Otomatis</span>
+            <button class="theme-toggle" onclick="toggleTelegramEnabled()" style="width: auto; background: transparent; border: none; padding: 0; cursor: pointer;">
+              <div class="toggle-pill ${state.telegram.enabled ? 'on' : ''}" id="tg-toggle-pill" style="margin-left: auto;">
+                <div class="toggle-dot"></div>
+              </div>
+            </button>
+          </div>
+        </div>
+        
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label class="form-label" for="tg-token" style="font-weight: 600;">Token Bot Telegram</label>
+          <div style="position: relative; display: flex; gap: 8px;">
+            <input class="form-input" type="password" id="tg-token" value="${state.telegram.token || ''}" placeholder="cth: 123456:ABC-DEF1234ghIkl-zyx" style="padding-right: 40px; flex: 1;"/>
+            <button onclick="toggleTokenVisibility()" class="btn-cancel" style="flex: 0 0 45px; display: flex; align-items: center; justify-content: center; padding: 0; border-radius: var(--radius-sm);" title="Tampilkan/Sembunyikan Token">
+              <i class="ti ti-eye" id="tg-eye-icon"></i>
+            </button>
+          </div>
+        </div>
+        
+        <div class="form-group" style="margin-bottom: 24px;">
+          <label class="form-label" for="tg-chat-id" style="font-weight: 600;">Chat ID Penerima</label>
+          <input class="form-input" type="text" id="tg-chat-id" value="${state.telegram.chatId || ''}" placeholder="cth: 987654321"/>
+        </div>
+        
+        <div style="display: flex; gap: 12px;">
+          <button class="btn-save" onclick="saveTelegramSettings()" style="flex: 1; padding: 12px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <i class="ti ti-device-floppy"></i> Simpan
+          </button>
+          <button class="btn-cancel" onclick="testTelegramConnection()" style="flex: 1; padding: 12px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <i class="ti ti-send"></i> Uji Kirim
+          </button>
+        </div>
+        
+        <div id="tg-status-message" style="margin-top: 16px; font-size: 12px; padding: 10px 14px; border-radius: var(--radius-sm); display: none;"></div>
+      </div>
+
+      <!-- Right Side: Guide Card -->
+      <div class="card" style="display: flex; flex-direction: column; gap: 16px;">
+        <div class="card-title" style="font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+          <i class="ti ti-help-circle" style="color: var(--gold); font-size: 18px;"></i>
+          Panduan Pembuatan Bot
+        </div>
+        
+        <div style="font-size: 12px; line-height: 1.6; color: var(--text2); display: flex; flex-direction: column; gap: 14px;">
+          <div style="display: flex; gap: 10px;">
+            <div style="width: 22px; height: 22px; border-radius: 50%; background: var(--bg3); display: flex; align-items: center; justify-content: center; font-weight: 600; color: var(--gold); flex-shrink: 0; font-size: 11px;">1</div>
+            <div>Cari <b>@BotFather</b> di Telegram dan kirim perintah <code>/newbot</code>.</div>
+          </div>
+          
+          <div style="display: flex; gap: 10px;">
+            <div style="width: 22px; height: 22px; border-radius: 50%; background: var(--bg3); display: flex; align-items: center; justify-content: center; font-weight: 600; color: var(--gold); flex-shrink: 0; font-size: 11px;">2</div>
+            <div>Masukkan nama dan username bot kustom Anda. Anda akan menerima sebuah <b>Token API HTTP</b>. Salin token tersebut.</div>
+          </div>
+          
+          <div style="display: flex; gap: 10px;">
+            <div style="width: 22px; height: 22px; border-radius: 50%; background: var(--bg3); display: flex; align-items: center; justify-content: center; font-weight: 600; color: var(--gold); flex-shrink: 0; font-size: 11px;">3</div>
+            <div>Cari bot <b>@userinfobot</b> di Telegram, klik Start, dan salin nomor <b>Id</b> Anda. Itu adalah Chat ID Anda.</div>
+          </div>
+          
+          <div style="display: flex; gap: 10px;">
+            <div style="width: 22px; height: 22px; border-radius: 50%; background: var(--bg3); display: flex; align-items: center; justify-content: center; font-weight: 600; color: var(--gold); flex-shrink: 0; font-size: 11px;">4</div>
+            <div>Buka obrolan dengan bot baru Anda dan tekan tombol <b>Start</b>. Langkah ini wajib agar bot diizinkan mengirim pesan.</div>
+          </div>
+          
+          <div style="margin-top: 6px; padding: 10px 12px; background: rgba(255, 197, 62, 0.06); border: 1px solid rgba(255, 197, 62, 0.15); border-radius: var(--radius-sm); font-size: 11px; color: var(--gold-light);">
+            <i class="ti ti-info-circle" style="vertical-align: middle; margin-right: 4px;"></i>
+            <b>Pemberitahuan:</b> Data disimpan di dalam browser lokal Anda dan tidak dikirim ke server luar manapun selain Telegram API resmi.
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function toggleTelegramEnabled() {
+  state.telegram.enabled = !state.telegram.enabled;
+  const pill = document.getElementById('tg-toggle-pill');
+  if (pill) {
+    pill.classList.toggle('on', state.telegram.enabled);
+  }
+  saveState();
+}
+
+function toggleTokenVisibility() {
+  const inp = document.getElementById('tg-token');
+  const eye = document.getElementById('tg-eye-icon');
+  if (inp && eye) {
+    if (inp.type === 'password') {
+      inp.type = 'text';
+      eye.className = 'ti ti-eye-off';
+    } else {
+      inp.type = 'password';
+      eye.className = 'ti ti-eye';
+    }
+  }
+}
+
+function saveTelegramSettings() {
+  const token = document.getElementById('tg-token').value.trim();
+  const chatId = document.getElementById('tg-chat-id').value.trim();
+  
+  state.telegram.token = token;
+  state.telegram.chatId = chatId;
+  saveState();
+  
+  showTelegramStatus('Pengaturan Telegram berhasil disimpan!', 'success');
+}
+
+function showTelegramStatus(msg, type) {
+  const el = document.getElementById('tg-status-message');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.display = 'block';
+  if (type === 'success') {
+    el.style.background = 'rgba(74, 222, 128, 0.1)';
+    el.style.border = '1px solid rgba(74, 222, 128, 0.25)';
+    el.style.color = 'var(--success)';
+  } else {
+    el.style.background = 'rgba(255, 92, 92, 0.1)';
+    el.style.border = '1px solid rgba(255, 92, 92, 0.25)';
+    el.style.color = 'var(--danger)';
+  }
+  setTimeout(() => {
+    el.style.display = 'none';
+  }, 5000);
+}
+
+async function sendTelegramMessage(text) {
+  if (!state.telegram || !state.telegram.token || !state.telegram.chatId) {
+    return { ok: false, description: 'Token atau Chat ID belum dikonfigurasi.' };
+  }
+  const url = `https://api.telegram.org/bot${state.telegram.token}/sendMessage`;
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: state.telegram.chatId,
+        text: text,
+        parse_mode: 'HTML'
+      })
+    });
+    return await res.json();
+  } catch (err) {
+    console.error('Failed to send Telegram message:', err);
+    return { ok: false, description: err.message };
+  }
+}
+
+async function testTelegramConnection() {
+  const token = document.getElementById('tg-token').value.trim();
+  const chatId = document.getElementById('tg-chat-id').value.trim();
+  
+  if (!token || !chatId) {
+    showTelegramStatus('Mohon lengkapi Token dan Chat ID terlebih dahulu.', 'error');
+    return;
+  }
+  
+  showTelegramStatus('Sedang mengirim pesan uji coba...', 'success');
+  
+  // Temporary set to allow test message
+  const oldToken = state.telegram.token;
+  const oldChatId = state.telegram.chatId;
+  state.telegram.token = token;
+  state.telegram.chatId = chatId;
+  
+  const text = `<b>⚡ Koneksi Berhasil!</b>\n\n` +
+               `Halo! Ini adalah pesan uji coba dari aplikasi <b>Keuanganku</b>.\n` +
+               `Integrasi Telegram Bot Anda sudah aktif dan siap mengirimkan notifikasi transaksi secara otomatis.`;
+               
+  const res = await sendTelegramMessage(text);
+  
+  // Restore state
+  state.telegram.token = oldToken;
+  state.telegram.chatId = oldChatId;
+  
+  if (res.ok) {
+    showTelegramStatus('Pesan uji coba berhasil terkirim! Silakan periksa Telegram Anda.', 'success');
+  } else {
+    showTelegramStatus('Gagal mengirim: ' + (res.description || 'Token/Chat ID salah.'), 'error');
+  }
+}
+
+// Initializing page load
+applyTheme();
+populateCategoryDropdown();
+renderDashboard();
+</script>
+</body>
+</html>
