@@ -1713,6 +1713,26 @@ function depositToActiveGoal() {
   addMoneyToSaving(activeSavingIdx);
 }
 
+async function deleteSavingGoal(idx) {
+  const goal = state.savings[idx];
+  const confirmed = await showCustomConfirm({
+    title: "Hapus Celengan",
+    message: `Apakah Anda yakin ingin menghapus celengan "${goal.nama}"? Catatan dan progres tabungan ini akan dihapus secara permanen.`
+  });
+  if (confirmed) {
+    state.savings.splice(idx, 1);
+    if (activeSavingIdx >= state.savings.length) {
+      activeSavingIdx = Math.max(0, state.savings.length - 1);
+    }
+    saveState();
+    renderTabunganPage();
+    if (currentPage === 'dashboard') {
+      renderDashboard();
+    }
+    showNotification('Celengan impian berhasil dihapus.');
+  }
+}
+
 async function createInitialSavingGoal() {
   const name = await showCustomPrompt({
     title: "Buat Celengan Impian",
