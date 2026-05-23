@@ -2604,23 +2604,13 @@ function startTelegramBotListener() {
   // 1. Force delete any webhook conflict to guarantee getUpdates works!
   fetch(`https://api.telegram.org/bot${state.telegram.token}/deleteWebhook`)
     .then(() => {
-      // 2. Fetch the latest update history to initialize offset
-      return fetch(`https://api.telegram.org/bot${state.telegram.token}/getUpdates?limit=100`);
-    })
-    .then(res => res.json())
-    .then(data => {
-      if (data.ok && data.result.length > 0) {
-        // Set to the absolute newest message in queue to skip old testing spam
-        tgLastUpdateId = data.result[data.result.length - 1].update_id;
-      } else {
-        tgLastUpdateId = 0;
-      }
-      // Poll fresh updates every 3.5 seconds
+      // 2. Start polling fresh updates every 3.5 seconds
       window.tgListenerInterval = setInterval(checkTelegramCommands, 3500);
+      // Trigger first check immediately
+      checkTelegramCommands();
     })
     .catch(err => {
       console.error("Failed to init TG updates listener:", err);
-      // Fallback
       window.tgListenerInterval = setInterval(checkTelegramCommands, 5000);
     });
 }
@@ -2634,7 +2624,11 @@ async function checkTelegramCommands() {
   }
   
   try {
-    const res = await fetch(`https://api.telegram.org/bot${state.telegram.token}/getUpdates?offset=${tgLastUpdateId + 1}`);
+    const url = tgLastUpdateId === 0 
+      ? `https://api.telegram.org/bot${state.telegram.token}/getUpdates`
+      : `https://api.telegram.org/bot${state.telegram.token}/getUpdates?offset=${tgLastUpdateId + 1}`;
+      
+    const res = await fetch(url);
     const data = await res.json();
     if (data.ok && data.result.length > 0) {
       for (const update of data.result) {
@@ -2642,6 +2636,11 @@ async function checkTelegramCommands() {
         
         const message = update.message;
         if (!message || !message.text) continue;
+        
+        // Ignore messages older than 120 seconds to prevent spamming from old queue
+        const nowUnix = Math.floor(Date.now() / 1000);
+        if (message.date && (nowUnix - message.date > 120)) continue;
+
         
         // Ensure ONLY configured chatId can request reports for absolute security
         if (String(message.chat.id) !== String(state.telegram.chatId)) continue;
