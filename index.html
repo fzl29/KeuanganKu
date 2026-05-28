@@ -1151,13 +1151,36 @@ function changePeriod(v) {
   saveState();
 }
 
+let editingTxnId = null;
+
 function openModal() {
+  editingTxnId = null;
+  const title = document.querySelector('.modal-title');
+  if (title) title.textContent = "Catat Transaksi Baru";
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('inp-date').value = today;
   document.getElementById('inp-nama').value = '';
   document.getElementById('inp-keterangan').value = '';
   document.getElementById('inp-amount').value = '';
-  setType(state.type);
+  setType(state.type || 'expense');
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function editTransaction(id) {
+  const txn = state.transactions.find(t => String(t.id) === String(id));
+  if (!txn) return;
+  
+  editingTxnId = txn.id;
+  const title = document.querySelector('.modal-title');
+  if (title) title.textContent = "Edit Transaksi";
+  
+  document.getElementById('inp-date').value = txn.date ? txn.date.split('T')[0] : '';
+  document.getElementById('inp-nama').value = txn.nama || '';
+  document.getElementById('inp-keterangan').value = txn.keterangan || '';
+  document.getElementById('inp-amount').value = txn.amount || '';
+  document.getElementById('inp-cat').value = txn.cat || 'Lainnya';
+  setType(txn.type || 'expense');
+  
   document.getElementById('modal-overlay').classList.add('open');
 }
 function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
@@ -1178,8 +1201,16 @@ function saveTransaction() {
   if (!nama) { document.getElementById('inp-nama').focus(); return; }
   if (!amount || amount <= 0) { document.getElementById('inp-amount').focus(); return; }
   
-  const newTxn = { id: Date.now(), nama, keterangan, amount, cat, date, type: state.type };
-  state.transactions.unshift(newTxn);
+  if (editingTxnId !== null) {
+    const txnIndex = state.transactions.findIndex(t => String(t.id) === String(editingTxnId));
+    if (txnIndex > -1) {
+      state.transactions[txnIndex] = { ...state.transactions[txnIndex], nama, keterangan, amount, cat, date, type: state.type };
+    }
+    editingTxnId = null;
+  } else {
+    const newTxn = { id: Date.now(), nama, keterangan, amount, cat, date, type: state.type };
+    state.transactions.unshift(newTxn);
+  }
   saveState();
 
   // Send real-time Telegram Bot notification if enabled
@@ -1442,6 +1473,9 @@ function renderFullTxnList() {
 
     return `
       <tr>
+        <td style="text-align: center; width: 40px;">
+          <input type="checkbox" class="txn-checkbox" value="${t.id}" onclick="updateSelectAllStatus()">
+        </td>
         <td style="width: 50px;">
           <div class="txn-icon ${ci.cls}" style="margin: 0; width: 32px; height: 32px; font-size: 13px;">
             <i class="ti ${ci.icon}"></i>
@@ -1453,8 +1487,11 @@ function renderFullTxnList() {
         <td><span style="color: var(--text2); font-weight: 500;">${t.cat}</span></td>
         <td><span class="badge-type ${badgeCls}">${badgeText}</span></td>
         <td><span class="stat-value ${amountCls}" style="font-size: 13px; font-weight: 700;">${amountStr}</span></td>
-        <td style="text-align: right; width: 60px;">
-          <button class="btn-delete-txn" onclick="deleteTransaction(${idx})" title="Hapus Transaksi">
+        <td style="text-align: right; width: 90px;">
+          <button class="btn-edit-txn" onclick="editTransaction('${t.id}')" title="Edit Transaksi" style="background: none; border: none; color: var(--text2); cursor: pointer; padding: 5px;">
+            <i class="ti ti-edit"></i>
+          </button>
+          <button class="btn-delete-txn" onclick="deleteTransaction(${idx})" title="Hapus Transaksi" style="background: none; border: none; color: var(--expense); cursor: pointer; padding: 5px;">
             <i class="ti ti-trash"></i>
           </button>
         </td>
@@ -1464,13 +1501,19 @@ function renderFullTxnList() {
 
   content.innerHTML = `
     <div class="card" style="margin-top: 0; padding: 20px;">
-      <div class="card-header" style="margin-bottom: 16px;">
+      <div class="card-header" style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
         <div class="card-title">Semua Transaksi (${state.transactions.length})</div>
+        <button id="btnDeleteSelected" onclick="deleteSelectedTransactions()" style="display: none; background: rgba(235, 87, 87, 0.1); color: var(--expense); border: 1px solid rgba(235, 87, 87, 0.2); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s;">
+          <i class="ti ti-trash" style="margin-right: 4px;"></i> Hapus Terpilih (<span id="selectedCount">0</span>)
+        </button>
       </div>
       <div class="table-responsive">
         <table class="premium-table">
           <thead>
             <tr>
+              <th style="width: 40px; text-align: center;">
+                <input type="checkbox" id="selectAllTxn" onclick="toggleSelectAll(this)">
+              </th>
               <th></th>
               <th>Tanggal</th>
               <th>Nama Transaksi</th>
@@ -1503,7 +1546,47 @@ async function deleteTransaction(index) {
     } else if (currentPage === 'transaksi') {
       renderFullTxnList();
     }
-    showNotification('Transaksi berhasil dihapus.');
+  }
+}
+
+function toggleSelectAll(checkbox) {
+  const checkboxes = document.querySelectorAll('.txn-checkbox');
+  checkboxes.forEach(cb => cb.checked = checkbox.checked);
+  updateSelectAllStatus();
+}
+
+function updateSelectAllStatus() {
+  const checkboxes = document.querySelectorAll('.txn-checkbox');
+  const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+  const selectAllCb = document.getElementById('selectAllTxn');
+  if (selectAllCb) selectAllCb.checked = (checkedCount === checkboxes.length && checkboxes.length > 0);
+  
+  const btnDelete = document.getElementById('btnDeleteSelected');
+  const spanCount = document.getElementById('selectedCount');
+  if (btnDelete && spanCount) {
+    if (checkedCount > 0) {
+      btnDelete.style.display = 'block';
+      spanCount.textContent = checkedCount;
+    } else {
+      btnDelete.style.display = 'none';
+    }
+  }
+}
+
+async function deleteSelectedTransactions() {
+  const checkboxes = document.querySelectorAll('.txn-checkbox:checked');
+  if (checkboxes.length === 0) return;
+  
+  const confirmed = await showCustomConfirm({
+    title: "Hapus Transaksi Terpilih",
+    message: `Apakah Anda yakin ingin menghapus ${checkboxes.length} transaksi ini?`
+  });
+  
+  if (confirmed) {
+    const idsToDelete = Array.from(checkboxes).map(cb => String(cb.value));
+    state.transactions = state.transactions.filter(t => !idsToDelete.includes(String(t.id)));
+    saveState();
+    renderFullTxnList();
   }
 }
 
