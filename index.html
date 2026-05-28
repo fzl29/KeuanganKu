@@ -2354,14 +2354,38 @@ function populateCategoryDropdown() {
 function renderPengaturanPage() {
   const content = document.getElementById('view-pengaturan');
   if (!content) return;
-  
+
+  const isDark = document.body.classList.contains('dark');
+
   content.innerHTML = `
-    <div class="two-col" style="grid-template-columns: 1fr 360px; gap: 20px;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 24px; max-width: 1000px; margin: 0 auto; width: 100%;">
       
-      <!-- Left Column: Settings Cards -->
+      <!-- Left Column: Settings -->
       <div style="display: flex; flex-direction: column; gap: 20px;">
         
-        <!-- Telegram Bot integration Card -->
+        <!-- Theme Settings Card -->
+        <div class="card">
+          <div class="card-header" style="margin-bottom: 24px;">
+            <div class="card-title" style="font-size: 15px; font-weight: 700; color: var(--gold); display: flex; align-items: center; gap: 8px;">
+              <i class="ti ti-moon" style="font-size: 20px;"></i>
+              Tampilan & Tema
+            </div>
+          </div>
+          
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" style="font-weight: 600;">Mode Gelap (Dark Mode)</label>
+            <div style="display: flex; align-items: center; justify-content: space-between; background: var(--bg3); padding: 12px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+              <span style="font-size: 13px; color: var(--text);">Aktifkan Mode Gelap</span>
+              <button class="theme-toggle" onclick="toggleTheme()" style="width: auto; background: transparent; border: none; padding: 0; cursor: pointer;">
+                <div class="toggle-pill ${isDark ? 'on' : ''}" style="margin-left: auto;">
+                  <div class="toggle-dot"></div>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Telegram Integrations Card -->
         <div class="card" style="margin-top: 0;">
           <div class="card-header" style="margin-bottom: 24px;">
             <div class="card-title" style="font-size: 15px; font-weight: 700; color: var(--gold); display: flex; align-items: center; gap: 8px;">
