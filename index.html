@@ -683,9 +683,6 @@
       <div class="nav-item" onclick="setPage('statistik',this)">
         <i class="ti ti-chart-bar" aria-hidden="true"></i> Statistik
       </div>
-      <div class="nav-item" onclick="setPage('kategori',this)">
-        <i class="ti ti-tag" aria-hidden="true"></i> Kategori
-      </div>
       <div class="nav-item" onclick="setPage('pengaturan',this)">
         <i class="ti ti-settings" aria-hidden="true"></i> Pengaturan
       </div>
@@ -907,8 +904,7 @@
       <!-- View Statistik -->
       <div id="view-statistik" class="view-container" style="display: none;"></div>
 
-      <!-- View Kategori -->
-      <div id="view-kategori" class="view-container" style="display: none;"></div>
+      <!-- View Kategori removed -->
 
       <!-- View Pengaturan -->
       <div id="view-pengaturan" class="view-container" style="display: none;"></div>
@@ -1096,7 +1092,7 @@ function setPage(page, el) {
   
   // Synchronize Desktop Active State
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  const desktopIdx = { dashboard: 0, transaksi: 1, anggaran: 2, tabungan: 3, statistik: 4, kategori: 5, pengaturan: 6 }[page];
+  const desktopIdx = { dashboard: 0, transaksi: 1, anggaran: 2, tabungan: 3, statistik: 4, pengaturan: 5 }[page];
   const dItems = document.querySelectorAll('.nav-item');
   if (dItems && dItems[desktopIdx]) dItems[desktopIdx].classList.add('active');
   
@@ -1141,7 +1137,6 @@ function setPage(page, el) {
   else if (page === 'anggaran') renderBudgetPage();
   else if (page === 'tabungan') renderTabunganPage();
   else if (page === 'statistik') renderStatistikPage();
-  else if (page === 'kategori') renderKategoriPage();
   else if (page === 'pengaturan') renderPengaturanPage();
   else renderDashboard();
 }
@@ -1621,6 +1616,104 @@ function renderBudgetPage() {
     `;
   }).join('');
 
+  const catStats = {};
+  state.transactions.forEach(t => {
+    const c = (t.cat || 'Lainnya').trim();
+    if (!catStats[c]) {
+      catStats[c] = { count: 0, expense: 0, income: 0 };
+    }
+    catStats[c].count++;
+    if (t.type === 'income') {
+      catStats[c].income += Number(t.amount);
+    } else {
+      catStats[c].expense += Number(t.amount);
+    }
+  });
+
+  const allCats = new Set([
+    ...Object.keys(state.catIcons),
+    ...state.transactions.map(t => (t.cat || 'Lainnya').trim())
+  ]);
+  const categories = Array.from(allCats);
+
+  let katHtml = `<div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(240px, 1fr));gap:14px;margin-top:16px;">`;
+  categories.forEach(cat => {
+    const iconData = state.catIcons[cat] || { cls: 'food', icon: 'ti-dots' };
+    const stats = catStats[cat] || { count: 0, expense: 0, income: 0 };
+    katHtml += `
+        <div class="card" style="padding:16px;border-color:var(--border);background:var(--bg3);display:flex;flex-direction:column;gap:12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div class="txn-icon ${iconData.cls}" style="width:36px;height:36px;font-size:16px;border-radius:10px;">
+                <i class="ti ${iconData.icon}" aria-hidden="true"></i>
+              </div>
+              <div>
+                <div style="font-weight:600;font-size:13px;">${cat}</div>
+                <div style="font-size:10px;color:var(--text2);">${stats.count} Transaksi</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:4px;">
+              <button class="btn-action-cat" onclick="editCategory('${cat.replace(/'/g, "\\'")}')" title="Ubah Nama" style="background:transparent;border:none;color:var(--text3);cursor:pointer;padding:6px;border-radius:6px;transition:all var(--transition);">
+                <i class="ti ti-edit" style="font-size:14px;"></i>
+              </button>
+              <button class="btn-action-cat" onclick="deleteCategory('${cat.replace(/'/g, "\\'")}')" title="Hapus Kategori" style="background:transparent;border:none;color:var(--text3);cursor:pointer;padding:6px;border-radius:6px;transition:all var(--transition);">
+                <i class="ti ti-trash" style="font-size:14px;"></i>
+              </button>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;border-top:0.5px solid var(--border);padding-top:10px;font-size:11px;">
+            <div style="display:flex;justify-content:space-between;">
+              <span style="color:var(--text2);">Pemasukan:</span>
+              <span style="color:var(--success);font-family:var(--mono);">${rp(stats.income)}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;">
+              <span style="color:var(--text2);">Pengeluaran:</span>
+              <span style="color:var(--danger);font-family:var(--mono);">${rp(stats.expense)}</span>
+            </div>
+          </div>
+        </div>`;
+  });
+  katHtml += `</div>`;
+
+  let addCatHtml = `
+    <div class="card" style="margin-top: 24px;">
+      <div class="card-header"><div class="card-title">Tambah Kategori Baru</div></div>
+      <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+        <div style="flex:1;min-width:200px;">
+          <label class="form-label" for="new-cat-name">Nama Kategori</label>
+          <input class="form-input" type="text" id="new-cat-name" placeholder="cth: Pendidikan, Pajak..."/>
+        </div>
+        <div style="width:180px;">
+          <label class="form-label" for="new-cat-icon">Icon Tabler</label>
+          <select class="form-input" id="new-cat-icon">
+            <option value="ti-book">ti-book (Buku)</option>
+            <option value="ti-car">ti-car (Mobil)</option>
+            <option value="ti-home">ti-home (Rumah)</option>
+            <option value="ti-gift">ti-gift (Hadiah)</option>
+            <option value="ti-shirt">ti-shirt (Pakaian)</option>
+            <option value="ti-device-tv">ti-device-tv (TV/Film)</option>
+            <option value="ti-users">ti-users (Keluarga)</option>
+            <option value="ti-coin">ti-coin (Koin)</option>
+            <option value="ti-dots">ti-dots (Lainnya)</option>
+          </select>
+        </div>
+        <div style="width:140px;">
+          <label class="form-label" for="new-cat-color">Gaya Warna</label>
+          <select class="form-input" id="new-cat-color">
+            <option value="food">Emas/Kuning</option>
+            <option value="salary">Hijau</option>
+            <option value="shop">Merah</option>
+            <option value="transport">Biru</option>
+            <option value="health">Ungu</option>
+          </select>
+        </div>
+        <button class="btn-add" style="height:38px;padding:0 20px;" onclick="addNewCategory()">
+          <i class="ti ti-plus" aria-hidden="true"></i> Tambah
+        </button>
+      </div>
+    </div>
+  `;
+
   content.innerHTML = `
     <div class="card" style="margin-top: 0; max-width: 540px; display: flex; flex-direction: column; gap: 16px;">
       <div class="card-header" style="margin-bottom: 0;">
@@ -1630,6 +1723,13 @@ function renderBudgetPage() {
         ${budgetRows}
       </div>
       <div style="margin-top: 6px; font-size: 11px; color: var(--text3);">💡 Ubah batas pengeluaran kategori bulanan Anda secara instan menggunakan ikon edit.</div>
+    </div>
+
+    <div style="margin-top: 32px;">
+      <h3 style="font-size: 18px; margin-bottom: 8px;">Daftar Kategori (${categories.length})</h3>
+      <p style="font-size: 13px; color: var(--text2); margin-bottom: 0;">Rincian total perputaran uang berdasarkan kategori transaksi.</p>
+      ${katHtml}
+      ${addCatHtml}
     </div>
   `;
 }
@@ -2162,118 +2262,7 @@ function renderStatistikPage() {
   }
 }
 
-function renderKategoriPage() {
-  const content = document.getElementById('view-kategori');
-  if (!content) return;
-
-  const catStats = {};
-  state.transactions.forEach(t => {
-    const c = (t.cat || 'Lainnya').trim();
-    if (!catStats[c]) {
-      catStats[c] = { count: 0, expense: 0, income: 0 };
-    }
-    catStats[c].count++;
-    if (t.type === 'income') {
-      catStats[c].income += Number(t.amount);
-    } else {
-      catStats[c].expense += Number(t.amount);
-    }
-  });
-
-  const allCats = new Set([
-    ...Object.keys(state.catIcons),
-    ...state.transactions.map(t => (t.cat || 'Lainnya').trim())
-  ]);
-  const categories = Array.from(allCats);
-
-  let html = `<div style="display:flex;flex-direction:column;gap:20px;width:100%;">
-    <div class="card" style="margin-top:0;">
-      <div class="card-header">
-        <div class="card-title">Kategori Periode Ini (${categories.length})</div>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(240px, 1fr));gap:14px;">`;
-
-  categories.forEach(cat => {
-    const iconData = state.catIcons[cat] || { cls: 'food', icon: 'ti-dots' };
-    const stats = catStats[cat] || { count: 0, expense: 0, income: 0 };
-    html += `
-        <div class="card" style="padding:16px;border-color:var(--border);background:var(--bg3);display:flex;flex-direction:column;gap:12px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
-            <div style="display:flex;align-items:center;gap:10px;">
-              <div class="txn-icon ${iconData.cls}" style="width:36px;height:36px;font-size:16px;border-radius:10px;">
-                <i class="ti ${iconData.icon}" aria-hidden="true"></i>
-              </div>
-              <div>
-                <div style="font-weight:600;font-size:13px;">${cat}</div>
-                <div style="font-size:10px;color:var(--text2);">${stats.count} Transaksi</div>
-              </div>
-            </div>
-            <div style="display:flex;gap:4px;">
-              <button class="btn-action-cat" onclick="editCategory('${cat.replace(/'/g, "\\'")}')" title="Ubah Nama" style="background:transparent;border:none;color:var(--text3);cursor:pointer;padding:6px;border-radius:6px;transition:all var(--transition);">
-                <i class="ti ti-edit" style="font-size:14px;"></i>
-              </button>
-              <button class="btn-action-cat" onclick="deleteCategory('${cat.replace(/'/g, "\\'")}')" title="Hapus Kategori" style="background:transparent;border:none;color:var(--text3);cursor:pointer;padding:6px;border-radius:6px;transition:all var(--transition);">
-                <i class="ti ti-trash" style="font-size:14px;"></i>
-              </button>
-            </div>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:4px;border-top:0.5px solid var(--border);padding-top:10px;font-size:11px;">
-            <div style="display:flex;justify-content:space-between;">
-              <span style="color:var(--text2);">Pemasukan:</span>
-              <span style="color:var(--success);font-family:var(--mono);">${rp(stats.income)}</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;">
-              <span style="color:var(--text2);">Pengeluaran:</span>
-              <span style="color:var(--danger);font-family:var(--mono);">${rp(stats.expense)}</span>
-            </div>
-          </div>
-        </div>`;
-  });
-
-  html += `
-      </div>
-    </div>
-    
-    <div class="card">
-      <div class="card-header"><div class="card-title">Tambah Kategori Baru</div></div>
-      <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
-        <div style="flex:1;min-width:200px;">
-          <label class="form-label" for="new-cat-name">Nama Kategori</label>
-          <input class="form-input" type="text" id="new-cat-name" placeholder="cth: Pendidikan, Pajak..."/>
-        </div>
-        <div style="width:180px;">
-          <label class="form-label" for="new-cat-icon">Icon Tabler</label>
-          <select class="form-input" id="new-cat-icon">
-            <option value="ti-book">ti-book (Buku)</option>
-            <option value="ti-car">ti-car (Mobil)</option>
-            <option value="ti-home">ti-home (Rumah)</option>
-            <option value="ti-gift">ti-gift (Hadiah)</option>
-            <option value="ti-shirt">ti-shirt (Pakaian)</option>
-            <option value="ti-device-tv">ti-device-tv (TV/Film)</option>
-            <option value="ti-users">ti-users (Keluarga)</option>
-            <option value="ti-coin">ti-coin (Koin)</option>
-            <option value="ti-dots">ti-dots (Lainnya)</option>
-          </select>
-        </div>
-        <div style="width:140px;">
-          <label class="form-label" for="new-cat-color">Gaya Warna</label>
-          <select class="form-input" id="new-cat-color">
-            <option value="food">Emas/Kuning</option>
-            <option value="salary">Hijau</option>
-            <option value="shop">Merah</option>
-            <option value="transport">Biru</option>
-            <option value="health">Ungu</option>
-          </select>
-        </div>
-        <button class="btn-add" style="height:38px;padding:0 20px;" onclick="addNewCategory()">
-          <i class="ti ti-plus" aria-hidden="true"></i> Tambah
-        </button>
-      </div>
-    </div>
-  </div>`;
-  
-  content.innerHTML = html;
-}
+// Kategori page merged into Anggaran
 
 function addNewCategory() {
   const name = document.getElementById('new-cat-name').value.trim();
@@ -2294,7 +2283,7 @@ function addNewCategory() {
   
   populateCategoryDropdown();
   saveState();
-  renderKategoriPage();
+  renderBudgetPage();
 }
 
 async function deleteCategory(name) {
@@ -2314,7 +2303,7 @@ async function deleteCategory(name) {
     
     populateCategoryDropdown();
     saveState();
-    renderKategoriPage();
+    renderBudgetPage();
     if (currentPage === 'dashboard') {
       renderDashboard();
     }
@@ -2350,7 +2339,7 @@ async function editCategory(oldName) {
   
   populateCategoryDropdown();
   saveState();
-  renderKategoriPage();
+  renderBudgetPage();
   if (currentPage === 'dashboard') {
     renderDashboard();
   }
