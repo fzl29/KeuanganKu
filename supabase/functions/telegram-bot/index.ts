@@ -193,8 +193,23 @@ Penting: 'amount' HANYA BERUPA ANGKA POSITIF (tanpa titik, koma, atau Rp). 'desc
          return new Response('OK')
       }
 
-      const amountStr = parts[1].replace(/[^0-9]/g, '')
-      const nama = parts.slice(2).join(' ').trim() || 'Input dari Telegram'
+      // Cari bagian mana yang berupa angka
+      const words = parts.slice(1) // Buang tanda '+' atau '-'
+      const numberIndex = words.findIndex(w => /\d/.test(w))
+      
+      let amountStr = ''
+      let nama = ''
+
+      if (numberIndex > -1) {
+         amountStr = words[numberIndex].replace(/[^0-9]/g, '')
+         const namaWords = [...words]
+         namaWords.splice(numberIndex, 1) // Hapus angkanya
+         nama = namaWords.join(' ').trim()
+      } else {
+         nama = words.join(' ').trim()
+      }
+
+      if (!nama) nama = 'Input dari Telegram'
 
       if (!amountStr || isNaN(Number(amountStr))) {
         await reply('❌ Nominal harus berupa angka yang valid.')
