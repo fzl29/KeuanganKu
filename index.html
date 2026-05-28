@@ -2492,6 +2492,24 @@ function renderPengaturanPage() {
 
       </div>
 
+        <!-- Danger Zone Card -->
+        <div class="card" style="border-color: rgba(255, 92, 92, 0.3);">
+          <div class="card-header" style="margin-bottom: 16px;">
+            <div class="card-title" style="font-size: 15px; font-weight: 700; color: var(--danger); display: flex; align-items: center; gap: 8px;">
+              <i class="ti ti-alert-triangle" style="font-size: 20px;"></i>
+              Zona Berbahaya
+            </div>
+          </div>
+          <div style="font-size: 12px; color: var(--text2); margin-bottom: 16px; line-height: 1.5;">
+            Tindakan ini akan menghapus permanen <b>SELURUH</b> data Transaksi, Anggaran, dan Tabungan Anda dari perangkat ini maupun dari Cloud.
+          </div>
+          <button class="btn-cancel" onclick="resetSemuaData()" style="width: 100%; padding: 12px; display: flex; align-items: center; justify-content: center; gap: 6px; background: rgba(255, 92, 92, 0.1); color: var(--danger); font-weight: 700; border: 1px solid rgba(255, 92, 92, 0.2);">
+            <i class="ti ti-trash"></i> Hapus Semua Data Sekarang
+          </button>
+        </div>
+
+      </div>
+
       <!-- Right Column: Guides -->
       <div style="display: flex; flex-direction: column; gap: 20px;">
         
@@ -2555,6 +2573,23 @@ create policy "Allow public access" on public.keuanganku_sync for all using (tru
 
     </div>
   `;
+}
+
+function resetSemuaData() {
+  if (confirm('⚠️ PERINGATAN DARURAT: Apakah Anda yakin ingin menghapus SEMUA data (Transaksi, Anggaran, dan Tabungan)? Tindakan ini permanen dan tidak dapat dibatalkan!')) {
+    state.transactions = [];
+    state.savings = [];
+    state.budgets = {};
+    saveState();
+    
+    showNotification('Semua data berhasil dihapus dan di-reset bersih!', 'success');
+    
+    if (currentPage === 'dashboard') renderDashboard();
+    else if (currentPage === 'transaksi') renderFullTxnList();
+    else if (currentPage === 'anggaran') renderBudgetPage();
+    else if (currentPage === 'tabungan') renderTabunganPage();
+    else if (currentPage === 'statistik') renderStatistikPage();
+  }
 }
 
 function toggleTelegramEnabled() {
