@@ -2166,12 +2166,8 @@ function renderKategoriPage() {
   const content = document.getElementById('view-kategori');
   if (!content) return;
 
-  const periodSel = document.getElementById('period-filter');
-  const period = periodSel ? periodSel.value : 'all';
-  const filteredTxns = filterTxnsByPeriod(state.transactions, period);
-
   const catStats = {};
-  filteredTxns.forEach(t => {
+  state.transactions.forEach(t => {
     const c = (t.cat || 'Lainnya').trim();
     if (!catStats[c]) {
       catStats[c] = { count: 0, expense: 0, income: 0 };
@@ -2186,7 +2182,7 @@ function renderKategoriPage() {
 
   const allCats = new Set([
     ...Object.keys(state.catIcons),
-    ...filteredTxns.map(t => (t.cat || 'Lainnya').trim())
+    ...state.transactions.map(t => (t.cat || 'Lainnya').trim())
   ]);
   const categories = Array.from(allCats);
 
