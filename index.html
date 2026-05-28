@@ -105,7 +105,7 @@
     display: flex; align-items: center; justify-content: center;
   }
   .logo-icon {
-    width: 140px; height: 44px;
+    width: 180px; height: 56px;
     background: transparent;
     border-radius: 10px;
     display: flex; align-items: center; justify-content: center;
@@ -626,6 +626,17 @@
     color: var(--danger);
     border: 1px solid rgba(255, 92, 92, 0.2);
   }
+
+  /* Responsive Premium Table */
+  @media (max-width: 768px) {
+    .premium-table th { padding: 8px 6px; font-size: 9px; }
+    .premium-table td { padding: 10px 6px; }
+    .premium-table td span { font-size: 11px !important; }
+    .premium-table .txn-icon { width: 26px !important; height: 26px !important; font-size: 12px !important; }
+    .premium-table .badge-type { padding: 3px 5px !important; font-size: 9px !important; }
+    .premium-table th:nth-child(5), .premium-table td:nth-child(5) { display: none; } /* Hide Keterangan on mobile */
+  }
+
   .btn-delete-txn {
     background: transparent;
     border: none;
@@ -1809,7 +1820,9 @@ function renderTabunganPage() {
           <i class="ti ti-pig" style="font-size: 48px; color: var(--gold); display: block; margin-bottom: 16px;"></i>
           <h3>Belum Ada Celengan Impian</h3>
           <p style="color: var(--text2); margin-bottom: 20px; font-size: 13px;">Buat celengan pertama Anda untuk mulai menabung menggunakan Celengan Ayam!</p>
-          <button class="btn-add" onclick="createInitialSavingGoal()">Buat Celengan Pertama</button>
+          <div style="display: flex; justify-content: center;">
+            <button class="btn-add" onclick="createInitialSavingGoal()">Buat Celengan Pertama</button>
+          </div>
         </div>
       </div>
     `;
