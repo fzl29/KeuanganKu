@@ -28,7 +28,7 @@
     --radius: 16px;
     --radius-sm: 10px;
     --ff: 'Plus Jakarta Sans', sans-serif;
-    --mono: 'JetBrains Mono', monospace;
+    --mono: 'Plus Jakarta Sans', sans-serif;
     --transition: 0.25s cubic-bezier(.4,0,.2,1);
     --glass-blur: blur(18px);
     --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35);
@@ -102,16 +102,15 @@
   .sidebar-logo {
     padding: 24px 20px 20px;
     border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; gap: 10px;
+    display: flex; align-items: center; justify-content: center;
   }
   .logo-icon {
-    width: 36px; height: 36px;
-    background: var(--gold);
+    width: 140px; height: 44px;
+    background: transparent;
     border-radius: 10px;
     display: flex; align-items: center; justify-content: center;
     font-weight: 700; font-size: 15px; color: #111;
     flex-shrink: 0;
-    box-shadow: 0 4px 12px rgba(255, 197, 62, 0.3);
   }
   .logo-text { font-size: 15px; font-weight: 600; letter-spacing: -0.3px; }
   .logo-sub { font-size: 10px; color: var(--text2); letter-spacing: 0.5px; text-transform: uppercase; }
@@ -657,12 +656,8 @@
   <aside class="sidebar">
     <div class="sidebar-logo">
       <div class="logo-icon" style="overflow: hidden; position: relative;">
-        <img src="assets/logo.png" alt="" style="width: 100%; height: 100%; object-fit: contain;" id="logo-img" onload="this.parentElement.style.background='transparent'; this.parentElement.style.boxShadow='none';" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'; this.parentElement.style.background='var(--gold)';" />
+        <img src="assets/logo.png" alt="Skie Finance" style="width: 100%; height: 100%; object-fit: contain;" id="logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'; this.parentElement.style.background='var(--gold)';" />
         <span class="logo-fallback-text" style="display: none; font-weight: 800; font-size: 16px; color: #111;">K</span>
-      </div>
-      <div>
-        <div class="logo-text">Keuangan<span style="color:var(--gold)">ku</span></div>
-        <div class="logo-sub">Manajemen Keuangan</div>
       </div>
     </div>
     <nav class="nav">
@@ -722,10 +717,12 @@
   <main class="main">
     <div class="topbar">
       <div style="display: flex; align-items: center; gap: 12px;">
-        <!-- Mobile Logo (KK) Fallback -->
-        <div class="mobile-logo-brand" style="display: none; align-items: center; gap: 8px;">
-          <div class="logo-icon" style="width: 32px; height: 32px; font-size: 13px; box-shadow: none; background: var(--gold); color: #111; font-weight: 700; border-radius: 8px; display: flex; align-items: center; justify-content: center;">K</div>
-          <span style="font-weight: 800; font-size: 15px; color: var(--text); letter-spacing: -0.3px;">Keuanganku</span>
+        <!-- Mobile Logo -->
+        <div class="mobile-logo-brand" style="display: none; align-items: center;">
+          <div class="logo-icon" style="width: 110px; height: 32px; background: transparent; overflow: hidden; position: relative; display: flex; align-items: center; justify-content: flex-start;">
+            <img src="assets/logo.png" alt="Skie Finance" style="width: 100%; height: 100%; object-fit: contain; object-position: left;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'; this.parentElement.style.background='var(--gold)';" />
+            <span class="logo-fallback-text" style="display: none; font-weight: 800; font-size: 15px; color: #111; padding-left: 8px;">K</span>
+          </div>
         </div>
         <div>
           <div class="page-title" id="page-title">Dashboard</div>
