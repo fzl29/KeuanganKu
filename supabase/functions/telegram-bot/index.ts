@@ -222,7 +222,20 @@ Penting: 'amount' HANYA BERUPA ANGKA POSITIF (tanpa titik, koma, atau Rp). 'desc
 
       const amount = Number(amountStr)
       const type = typeStr === '+' ? 'income' : 'expense'
-      const category = type === 'income' ? 'Pemasukan Lain' : 'Lain-lain'
+      let category = type === 'income' ? 'Pemasukan Lain' : 'Lain-lain'
+      const lowerNama = nama.toLowerCase()
+      
+      if (type === 'income') {
+         if (lowerNama.includes('gaji') || lowerNama.includes('upah') || lowerNama.includes('bonus')) category = 'Gaji'
+         else if (lowerNama.includes('invest') || lowerNama.includes('saham') || lowerNama.includes('bunga')) category = 'Investasi'
+      } else {
+         if (lowerNama.includes('makan') || lowerNama.includes('minum') || lowerNama.includes('kopi') || lowerNama.includes('resto') || lowerNama.includes('jajan')) category = 'Makanan & Minuman'
+         else if (lowerNama.includes('transport') || lowerNama.includes('bensin') || lowerNama.includes('gojek') || lowerNama.includes('grab') || lowerNama.includes('parkir') || lowerNama.includes('tol')) category = 'Transportasi'
+         else if (lowerNama.includes('belanja') || lowerNama.includes('indomaret') || lowerNama.includes('alfamart') || lowerNama.includes('shopee') || lowerNama.includes('tokopedia')) category = 'Belanja'
+         else if (lowerNama.includes('sehat') || lowerNama.includes('obat') || lowerNama.includes('dokter') || lowerNama.includes('rs') || lowerNama.includes('apotek')) category = 'Kesehatan'
+         else if (lowerNama.includes('game') || lowerNama.includes('nonton') || lowerNama.includes('hibur') || lowerNama.includes('film') || lowerNama.includes('bioskop')) category = 'Hiburan'
+      }
+
       const newTransaction = {
         id: 'tx-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
         type,
