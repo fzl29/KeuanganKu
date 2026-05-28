@@ -1038,14 +1038,14 @@ if (!state.telegram) {
     chatId: ''
   };
 }
-if (!state.supabase) {
-  state.supabase = {
-    enabled: false,
-    url: '',
-    key: '',
-    syncCode: ''
-  };
-}
+
+// FORCED HARDCODED SUPABASE CREDENTIALS (NO MORE CONFIG UI)
+state.supabase = {
+  enabled: true,
+  url: 'https://lripvlmhvqoljhehoyjo.supabase.co',
+  key: 'sb_publishable_R98-GU_FmhFYEzn0EEwezg_9DscOQWc',
+  syncCode: 'Republik1429'
+};
 
 if (!state.savings) {
   state.savings = [
@@ -2322,7 +2322,7 @@ function renderPengaturanPage() {
           <div id="tg-status-message" style="margin-top: 16px; font-size: 12px; padding: 10px 14px; border-radius: var(--radius-sm); display: none;"></div>
         </div>
 
-        <!-- Supabase Cloud Sync Card -->
+        <!-- Supabase Cloud Sync Card (Hardcoded UI) -->
         <div class="card">
           <div class="card-header" style="margin-bottom: 24px;">
             <div class="card-title" style="font-size: 15px; font-weight: 700; color: var(--gold); display: flex; align-items: center; gap: 8px;">
@@ -2331,52 +2331,17 @@ function renderPengaturanPage() {
             </div>
           </div>
 
-          <div class="form-group" style="margin-bottom: 20px;">
+          <div class="form-group" style="margin-bottom: 0;">
             <label class="form-label" style="font-weight: 600;">Status Koneksi Awan</label>
-            <div style="display: flex; align-items: center; justify-content: space-between; background: var(--bg3); padding: 12px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border);">
-              <span style="font-size: 13px; color: var(--text);" id="sb-status-badge">
-                ${state.supabase.enabled ? '🟢 Cloud Terkoneksi (Real-time)' : '⚪ Lokal Only (Fallback)'}
+            <div style="display: flex; align-items: center; justify-content: space-between; background: var(--bg3); padding: 12px 16px; border-radius: var(--radius-sm); border: 1px solid rgba(74, 222, 128, 0.2);">
+              <span style="font-size: 13px; font-weight: 600; color: var(--success);" id="sb-status-badge">
+                🟢 Cloud Terkoneksi (Real-time 24/7)
               </span>
-              <button class="theme-toggle" onclick="toggleSupabaseEnabled()" style="width: auto; background: transparent; border: none; padding: 0; cursor: pointer;">
-                <div class="toggle-pill ${state.supabase.enabled ? 'on' : ''}" id="sb-toggle-pill" style="margin-left: auto;">
-                  <div class="toggle-dot"></div>
-                </div>
-              </button>
+            </div>
+            <div style="font-size: 11px; color: var(--text2); margin-top: 10px; line-height: 1.5;">
+              <i>Kredensial database Supabase Anda telah tertanam langsung secara permanen ke dalam sistem. Data disinkronkan secara otomatis (real-time) tanpa perlu interaksi tombol apapun.</i>
             </div>
           </div>
-
-          <div class="form-group" style="margin-bottom: 20px;">
-            <label class="form-label" for="sb-url" style="font-weight: 600;">Supabase URL</label>
-            <input class="form-input" type="text" id="sb-url" value="${state.supabase.url || ''}" placeholder="cth: https://xyzexample.supabase.co"/>
-          </div>
-
-          <div class="form-group" style="margin-bottom: 20px;">
-            <label class="form-label" for="sb-key" style="font-weight: 600;">Supabase Anon Key / Publishable Key</label>
-            <input class="form-input" type="password" id="sb-key" value="${state.supabase.key || ''}" placeholder="sb_publishable_... atau anon key"/>
-          </div>
-
-          <div class="form-group" style="margin-bottom: 24px;">
-            <label class="form-label" for="sb-code" style="font-weight: 600;">Sync Code (PIN Keamanan)</label>
-            <input class="form-input" type="text" id="sb-code" value="${state.supabase.syncCode || ''}" placeholder="cth: fzl29_keuangan_utama (Gunakan PIN yang sama di HP & Laptop)"/>
-          </div>
-
-          <div style="display: flex; flex-direction: column; gap: 10px;">
-            <div style="display: flex; gap: 12px;">
-              <button class="btn-save" onclick="saveSupabaseSettings()" style="flex: 1; padding: 12px; display: flex; align-items: center; justify-content: center; gap: 6px;">
-                <i class="ti ti-link"></i> Hubungkan & Simpan
-              </button>
-            </div>
-            <div style="display: flex; gap: 12px;">
-              <button class="btn-cancel" onclick="triggerManualSyncUp()" style="flex: 1; padding: 10px; display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 600;" title="Kirim data lokal saat ini ke Cloud">
-                <i class="ti ti-upload"></i> Kirim ke Cloud 📤
-              </button>
-              <button class="btn-cancel" onclick="triggerManualSyncDown()" style="flex: 1; padding: 10px; display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 600;" title="Unduh data Cloud saat ini ke perangkat lokal">
-                <i class="ti ti-download"></i> Unduh dari Cloud 📥
-              </button>
-            </div>
-          </div>
-
-          <div id="sb-status-message" style="margin-top: 16px; font-size: 12px; padding: 10px 14px; border-radius: var(--radius-sm); display: none;"></div>
         </div>
 
       </div>
