@@ -129,7 +129,7 @@ Penting: 'amount' HANYA BERUPA ANGKA POSITIF (tanpa titik, koma, atau Rp). 'desc
         }
 
         const amount = Number(parsed.amount)
-        const desc = parsed.desc || 'Pengeluaran (Struk AI)'
+        const nama = parsed.desc || 'Pengeluaran (Struk AI)'
         const type = 'expense'
 
         // 4. Proses Transaksi
@@ -151,7 +151,7 @@ Penting: 'amount' HANYA BERUPA ANGKA POSITIF (tanpa titik, koma, atau Rp). 'desc
           id: 'tx-ai-' + Date.now(),
           type,
           amount,
-          desc,
+          nama,
           cat: 'Lain-lain',
           date: new Date().toISOString()
         })
@@ -163,7 +163,7 @@ Penting: 'amount' HANYA BERUPA ANGKA POSITIF (tanpa titik, koma, atau Rp). 'desc
         if (upsertError) {
           await reply(`❌ Gagal menyimpan transaksi struk ke Cloud.`)
         } else {
-          await reply(`✅ <b>Struk Berhasil Dibaca AI!</b>\n\n🔴 Pengeluaran: <b>${rp(amount)}</b>\nKeterangan: <i>${desc}</i>\n\n<i>Tercatat otomatis ke Cloud.</i>`)
+          await reply(`✅ <b>Struk Berhasil Dibaca AI!</b>\n\n🔴 Pengeluaran: <b>${rp(amount)}</b>\nKeterangan: <i>${nama}</i>\n\n<i>Tercatat otomatis ke Cloud.</i>`)
         }
       } catch (err) {
         await reply(`❌ Maaf, struk kurang jelas atau AI gagal menemukan total harga. Silakan input manual.\nError: ${err.message}`)
@@ -192,7 +192,7 @@ Penting: 'amount' HANYA BERUPA ANGKA POSITIF (tanpa titik, koma, atau Rp). 'desc
       }
 
       const amountStr = parts[1].replace(/[^0-9]/g, '')
-      const desc = parts.slice(2).join(' ').trim() || 'Input dari Telegram'
+      const nama = parts.slice(2).join(' ').trim() || 'Input dari Telegram'
 
       if (!amountStr || isNaN(Number(amountStr))) {
         await reply('❌ Nominal harus berupa angka yang valid.')
@@ -206,7 +206,7 @@ Penting: 'amount' HANYA BERUPA ANGKA POSITIF (tanpa titik, koma, atau Rp). 'desc
         id: 'tx-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
         type,
         amount,
-        desc,
+        nama,
         cat: category,
         date: new Date().toISOString()
       }
@@ -246,7 +246,7 @@ Penting: 'amount' HANYA BERUPA ANGKA POSITIF (tanpa titik, koma, atau Rp). 'desc
       if (upsertError) {
         await reply(`❌ Gagal menyimpan transaksi ke Cloud: ${upsertError.message}`)
       } else {
-        await reply(`✅ <b>Transaksi Berhasil Dicatat (Cloud Sync)!</b>\n\nJenis: ${type === 'income' ? '🟢 Pemasukan' : '🔴 Pengeluaran'}\nNominal: <b>${rp(amount)}</b>\nKeterangan: <i>${desc}</i>\n\n<i>Buka web KeuanganKu untuk melihat update secara real-time.</i>`)
+        await reply(`✅ <b>Transaksi Berhasil Dicatat (Cloud Sync)!</b>\n\nJenis: ${type === 'income' ? '🟢 Pemasukan' : '🔴 Pengeluaran'}\nNominal: <b>${rp(amount)}</b>\nKeterangan: <i>${nama}</i>\n\n<i>Buka web KeuanganKu untuk melihat update secara real-time.</i>`)
       }
       return new Response('OK')
     }
