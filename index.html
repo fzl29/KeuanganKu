@@ -1309,9 +1309,18 @@ function renderChart() {
   
   const s = getStats();
   const months = ['Jan','Feb','Mar','Apr','Mei','Jun'];
-  // Set dynamic income and expense data
-  const mockIncome = [3200000, 2800000, 4100000, 3600000, s.income || 0, 0];
-  const mockExpense = [2100000, 1900000, 2800000, 2200000, s.expense || 0, 0];
+  // Aggregate real transaction data by month (Jan=0, Feb=1, etc.)
+  const mockIncome = [0, 0, 0, 0, 0, 0];
+  const mockExpense = [0, 0, 0, 0, 0, 0];
+  state.transactions.forEach(t => {
+    if (t.date) {
+      const m = new Date(t.date).getMonth();
+      if (m >= 0 && m <= 5) {
+        if (t.type === 'income') mockIncome[m] += t.amount;
+        if (t.type === 'expense') mockExpense[m] += t.amount;
+      }
+    }
+  });
   
   if (dashboardBarChart) {
     dashboardBarChart.destroy();
@@ -2148,7 +2157,14 @@ function renderStatistikPage() {
   const lineEl = document.getElementById('cashflow-line-chart');
   if (lineEl) {
     const months = ['Jan','Feb','Mar','Apr','Mei','Jun'];
-    const mockBalance = [1100000, 2000000, 3300000, 4700000, 4700000 + s.saldo, 4700000 + s.saldo];
+    let currentBal = 0;
+    const mockBalance = [0, 0, 0, 0, 0, 0];
+    for (let i = 0; i <= 5; i++) {
+       const mIncome = state.transactions.filter(t => t.date && new Date(t.date).getMonth() === i && t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+       const mExpense = state.transactions.filter(t => t.date && new Date(t.date).getMonth() === i && t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+       currentBal += (mIncome - mExpense);
+       mockBalance[i] = currentBal;
+    }
     
     if (cashflowLineChart) cashflowLineChart.destroy();
     
@@ -2220,10 +2236,10 @@ function renderStatistikPage() {
     let data = Object.values(catTotals);
     
     if (labels.length === 0) {
-      labels = ['Makan', 'Bensin', 'Nongkrong', 'Belanja'];
-      data = [1200000, 800000, 600000, 400000];
+      labels = ['Belum Ada Data'];
+      data = [1]; // dummy data so chart draws an empty gray ring
+      catTotals['Belum Ada Data'] = 0;
     }
-    
     const totalExp = data.reduce((sum, val) => sum + val, 0);
     const percentages = data.map(val => Math.round((val / totalExp) * 100));
 
