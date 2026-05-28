@@ -268,6 +268,31 @@ Penting: 'amount' HANYA BERUPA ANGKA POSITIF (tanpa titik, koma, atau Rp). 'desc
       return new Response('OK')
     }
 
+    // Handle Perintah Laporan Tabungan
+    if (lowerText === 'tabungan' || lowerText === 'laporan tabungan' || lowerText === 'lihat tabungan' || lowerText === 'cek tabungan' || lowerText === '/tabungan') {
+       const { data } = await supabase
+        .from('keuanganku_sync')
+        .select('state_data')
+        .eq('sync_code', syncCode)
+        .maybeSingle()
+        
+       if (!data || !data.state_data || !data.state_data.savings || data.state_data.savings.length === 0) {
+         await reply('❌ Anda belum memiliki celengan/tabungan. Silakan ketik: <code>buat tabungan [nominal target] [nama barang]</code>')
+         return new Response('OK')
+       }
+       
+       let reportText = `🐷 <b>LAPORAN CELENGAN ANDA</b>\n\n`;
+       data.state_data.savings.forEach((s: any) => {
+         const pct = Math.min(Math.round((s.terkumpul / s.target) * 100), 100);
+         reportText += `🎯 <b>${s.nama}</b>\n`;
+         reportText += `💰 Terkumpul: <b>${rp(s.terkumpul)}</b> / ${rp(s.target)} (${pct}%)\n`;
+         reportText += `⏳ Kekurangan: ${rp(Math.max(0, s.target - s.terkumpul))}\n\n`;
+       });
+       
+       await reply(reportText.trim());
+       return new Response('OK')
+    }
+
     // Handle Perintah Menabung (Bisa tanpa slash)
     if (lowerText.startsWith('/tabung') || lowerText.startsWith('tabung') || lowerText.startsWith('nabung') || lowerText.startsWith('simpan')) {
       const parts = text.split(' ')
