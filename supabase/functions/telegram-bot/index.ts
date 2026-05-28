@@ -94,7 +94,7 @@ Keluarkan HANYA dalam format JSON murni berikut (tanpa blok markdown atau teks t
 { "amount": 150000, "desc": "Belanja di Indomaret" }
 Penting: 'amount' HANYA BERUPA ANGKA POSITIF (tanpa titik, koma, atau Rp). 'desc' adalah kalimat singkat nama tempatnya.`
 
-      const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
+      const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
