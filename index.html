@@ -1810,7 +1810,7 @@ function renderTabunganPage() {
 
   const focusedGoal = state.savings[activeSavingIdx];
   const pct = Math.min(Math.round((focusedGoal.terkumpul / focusedGoal.target) * 100), 100);
-  const fillY = 170 - (pct / 100) * 124;
+  const fillY = 180 - (pct / 100) * 145;
 
   const selectOptions = state.savings.map((s, idx) => `
     <option value="${idx}" ${idx === activeSavingIdx ? 'selected' : ''}>${s.nama} (${Math.round((s.terkumpul/s.target)*100)}%)</option>
@@ -1826,34 +1826,69 @@ function renderTabunganPage() {
       </div>
 
       <div style="position: relative; margin: 15px 0;">
-        <svg width="300" height="300" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 10px 30px rgba(255, 197, 62, 0.22)); transition: all 0.3s ease;">
+        <svg width="300" height="300" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 15px 35px rgba(255, 197, 62, 0.3)); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);">
           <defs>
+            <filter id="inner-shadow">
+              <feOffset dx="0" dy="-8"/>
+              <feGaussianBlur stdDeviation="12" result="offset-blur"/>
+              <feComposite operator="out" in="SourceGraphic" in2="offset-blur" result="inverse"/>
+              <feFlood flood-color="black" flood-opacity="0.1" result="color"/>
+              <feComposite operator="in" in="color" in2="inverse" result="shadow"/>
+              <feComposite operator="over" in="shadow" in2="SourceGraphic"/>
+            </filter>
+            
             <clipPath id="chicken-body-clip">
-              <circle cx="100" cy="108" r="62" />
+              <path d="M100 35 C155 35, 175 80, 175 125 C175 160, 140 180, 100 180 C60 180, 25 160, 25 125 C25 80, 45 35, 100 35 Z" />
             </clipPath>
+
             <linearGradient id="gold-liquid-grad" x1="0%" y1="100%" x2="0%" y2="0%">
-              <stop offset="0%" stop-color="#FF5C5C" />
-              <stop offset="50%" stop-color="#FFC53E" />
-              <stop offset="100%" stop-color="#FFEFA6" />
+              <stop offset="0%" stop-color="#FF7A00" />
+              <stop offset="40%" stop-color="#FFB800" />
+              <stop offset="100%" stop-color="#FFE885" />
             </linearGradient>
+
+            <radialGradient id="body-grad" cx="35%" cy="30%" r="65%">
+              <stop offset="0%" stop-color="#ffffff"/>
+              <stop offset="100%" stop-color="#f0f2f5"/>
+            </radialGradient>
           </defs>
-          <path d="M 85 30 C 85 10, 100 10, 100 25 C 105 10, 120 10, 120 28 C 125 15, 135 20, 130 38" fill="#FF4B4B" stroke="#1c1c22" stroke-width="3" stroke-linejoin="round" />
-          <path d="M 38 108 C 15 90, 10 130, 38 140 Z" fill="#FFEFA6" stroke="#1c1c22" stroke-width="3" />
-          <path d="M 32 98 C 5 80, 0 110, 32 125 Z" fill="#FFC53E" stroke="#1c1c22" stroke-width="3" />
-          <path d="M 75 168 L 70 185 L 60 185 M 70 185 L 78 185" stroke="#FFC53E" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
-          <path d="M 125 168 L 130 185 L 140 185 M 130 185 L 122 185" stroke="#FFC53E" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
-          <circle cx="100" cy="108" r="62" fill="var(--bg2)" stroke="#1c1c22" stroke-width="4.5" />
+
+          <!-- Kaki -->
+          <path d="M 70 170 C 65 190, 55 195, 55 195 L 75 195 M 130 170 C 135 190, 145 195, 145 195 L 125 195" stroke="#FFB800" stroke-width="7" stroke-linecap="round" fill="none" />
+
+          <!-- Ekor -->
+          <path d="M 20 110 C 5 95, 0 130, 20 145 Z" fill="#FFB800" />
+          <path d="M 28 95 C 10 80, 5 110, 28 125 Z" fill="#FF7A00" />
+
+          <!-- Jengger -->
+          <path d="M 85 45 C 80 20, 95 15, 100 30 C 105 15, 120 15, 120 35 C 125 25, 135 30, 125 50 Z" fill="#FF4B4B" />
+
+          <!-- Tubuh Ayam (Mode HD tanpa garis tepi) -->
+          <path d="M100 35 C155 35, 175 80, 175 125 C175 160, 140 180, 100 180 C60 180, 25 160, 25 125 C25 80, 45 35, 100 35 Z" fill="url(#body-grad)" filter="url(#inner-shadow)" />
+
+          <!-- Lapisan Cairan Emas Animasi -->
           <g clip-path="url(#chicken-body-clip)">
-            <rect x="30" y="${fillY}" width="140" height="130" fill="url(#gold-liquid-grad)" style="transition: y 0.8s cubic-bezier(0.4, 0, 0.2, 1);" />
-            <path d="M 30 ${fillY} Q 65 ${fillY - 5}, 100 ${fillY} T 170 ${fillY}" fill="url(#gold-liquid-grad)" style="opacity: 0.8; transition: d 0.8s, y 0.8s;" />
+            <path d="M 10 ${fillY} Q 50 ${fillY - 8}, 100 ${fillY} T 190 ${fillY} L 190 200 L 10 200 Z" fill="url(#gold-liquid-grad)" style="transition: all 1s cubic-bezier(0.4, 0, 0.2, 1);" opacity="0.95"/>
+            <path d="M 10 ${fillY} Q 50 ${fillY + 8}, 100 ${fillY} T 190 ${fillY}" stroke="#ffffff" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.4" style="transition: all 1s cubic-bezier(0.4, 0, 0.2, 1);"/>
           </g>
-          <path d="M 158 92 L 175 100 L 158 106 Z" fill="#FFC53E" stroke="#1c1c22" stroke-width="3" stroke-linejoin="round" />
-          <circle cx="140" cy="85" r="7" fill="#1c1c22" />
-          <circle cx="142" cy="83" r="2.5" fill="#fff" />
-          <circle cx="144" cy="98" r="8" fill="#FF5C5C" opacity="0.4" />
-          <rect x="88" y="42" width="24" height="6" rx="2" fill="#1c1c22" stroke="#FFC53E" stroke-width="1.5" />
+
+          <!-- Efek Kaca (Glass Highlight) -->
+          <path d="M 45 65 C 65 40, 100 40, 120 50 C 90 45, 60 55, 45 80 Z" fill="#ffffff" opacity="0.8" />
+
+          <!-- Paruh -->
+          <path d="M 165 95 L 190 105 L 165 115 Z" fill="#FFB800" stroke="#FF7A00" stroke-width="2" stroke-linejoin="round" />
+
+          <!-- Mata -->
+          <circle cx="150" cy="90" r="9" fill="#1c1c22" />
+          <circle cx="153" cy="87" r="3" fill="#ffffff" />
+          
+          <!-- Pipi Merah (Blush) -->
+          <circle cx="155" cy="108" r="12" fill="#FF5C5C" opacity="0.25" />
+
+          <!-- Lubang Koin -->
+          <rect x="85" y="45" width="30" height="7" rx="3.5" fill="#1c1c22" opacity="0.85" />
         </svg>
-        <div style="position: absolute; top: 58%; left: 50%; transform: translate(-50%, -50%); font-weight: 900; font-size: 32px; color: ${pct > 45 ? '#111' : 'var(--text)'}; font-family: var(--mono); text-shadow: ${pct > 45 ? 'none' : '0 2px 8px rgba(0,0,0,0.5)'}; transition: color 0.5s;">
+        <div style="position: absolute; top: 60%; left: 45%; transform: translate(-50%, -50%); font-weight: 900; font-size: 38px; color: ${pct > 40 ? '#ffffff' : '#111'}; font-family: var(--mono); text-shadow: ${pct > 40 ? '0 2px 10px rgba(0,0,0,0.3)' : 'none'}; transition: color 0.5s;">
           ${pct}%
         </div>
       </div>
