@@ -20,7 +20,7 @@ serve(async (req) => {
     const body = await req.json()
     const message = body.message || body.edited_message
 
-    if (!message || !message.text) {
+    if (!message || (!message.text && !message.photo)) {
       return new Response('OK', { status: 200 })
     }
 
@@ -29,7 +29,7 @@ serve(async (req) => {
       return new Response('Unauthorized chat', { status: 403 })
     }
 
-    const text = message.text.trim()
+    const text = (message.text || message.caption || '').trim()
     const lowerText = text.toLowerCase()
 
     // Supabase Setup
@@ -52,6 +52,121 @@ serve(async (req) => {
 
     // Format Rupiah
     const rp = (num: number) => 'Rp ' + num.toLocaleString('id-ID')
+
+    // Handle Photo (Struk)
+    if (message.photo && message.photo.length > 0) {
+      const photo = message.photo[message.photo.length - 1] // Ambil resolusi tertinggi
+      const fileId = photo.file_id
+
+      await reply('Sedang membaca struk menggunakan AI... 🤖 Mohon tunggu sebentar.')
+
+      // 1. Get File Path from Telegram
+      const fileRes = await fetch(`https://api.telegram.org/bot${botToken}/getFile?file_id=${fileId}`)
+      const fileData = await fileRes.json()
+      if (!fileData.ok) {
+        await reply('❌ Gagal mengunduh gambar dari Telegram.')
+        return new Response('OK')
+      }
+      const filePath = fileData.result.file_path
+
+      // 2. Download Image
+      const imgRes = await fetch(`https://api.telegram.org/file/bot${botToken}/${filePath}`)
+      const imgBlob = await imgRes.blob()
+      
+      const arrayBuffer = await imgBlob.arrayBuffer()
+      let binary = ''
+      const bytes = new Uint8Array(arrayBuffer)
+      for (let i = 0; i < bytes.byteLength; i++) {
+          binary += String.fromCharCode(bytes[i])
+      }
+      const base64String = btoa(binary)
+
+      // 3. Send to Gemini
+      const geminiApiKey = Deno.env.get('GEMINI_API_KEY')
+      if (!geminiApiKey) {
+        await reply('❌ API Key Gemini belum dikonfigurasi di server rahasia.')
+        return new Response('OK')
+      }
+
+      const prompt = `Anda adalah asisten keuangan pintar. Baca struk belanja ini.
+Temukan Total Harga Belanja dan Nama Toko/Restoran/Merchant.
+Keluarkan HANYA dalam format JSON murni berikut (tanpa blok markdown atau teks tambahan apapun):
+{ "amount": 150000, "desc": "Belanja di Indomaret" }
+Penting: 'amount' HANYA BERUPA ANGKA POSITIF (tanpa titik, koma, atau Rp). 'desc' adalah kalimat singkat nama tempatnya.`
+
+      const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { text: prompt },
+              { inline_data: { mime_type: imgBlob.type || 'image/jpeg', data: base64String } }
+            ]
+          }]
+        })
+      })
+
+      const geminiData = await geminiRes.json()
+      
+      if (geminiData.error) {
+         await reply(`❌ AI Error: ${geminiData.error.message}`)
+         return new Response('OK')
+      }
+
+      try {
+        let aiText = geminiData.candidates[0].content.parts[0].text
+        aiText = aiText.replace(/```json/g, '').replace(/```/g, '').trim()
+        const parsed = JSON.parse(aiText)
+
+        if (!parsed.amount || isNaN(parsed.amount)) {
+          throw new Error('Nominal total tidak ditemukan di struk.')
+        }
+
+        const amount = Number(parsed.amount)
+        const desc = parsed.desc || 'Pengeluaran (Struk AI)'
+        const type = 'expense'
+
+        // 4. Proses Transaksi
+        const { data, error: fetchError } = await supabase
+          .from('keuanganku_sync')
+          .select('state_data')
+          .eq('sync_code', syncCode)
+          .maybeSingle()
+
+        if (fetchError || !data || !data.state_data) {
+          await reply(`❌ Gagal mengambil data Cloud.`)
+          return new Response('OK')
+        }
+
+        const currentState = data.state_data
+        if (!currentState.transactions) currentState.transactions = []
+
+        currentState.transactions.unshift({
+          id: 'tx-ai-' + Date.now(),
+          type,
+          amount,
+          desc,
+          cat: 'Lain-lain',
+          date: new Date().toISOString()
+        })
+
+        const { error: upsertError } = await supabase
+          .from('keuanganku_sync')
+          .upsert({ sync_code: syncCode, state_data: currentState, updated_at: new Date().toISOString() }, { onConflict: 'sync_code' })
+
+        if (upsertError) {
+          await reply(`❌ Gagal menyimpan transaksi struk ke Cloud.`)
+        } else {
+          await reply(`✅ <b>Struk Berhasil Dibaca AI!</b>\n\n🔴 Pengeluaran: <b>${rp(amount)}</b>\nKeterangan: <i>${desc}</i>\n\n<i>Tercatat otomatis ke Cloud.</i>`)
+        }
+      } catch (err) {
+        await reply(`❌ Maaf, struk kurang jelas atau AI gagal menemukan total harga. Silakan input manual.\nError: ${err.message}`)
+      }
+      return new Response('OK')
+    }
+
+    if (!text) return new Response('OK') // Ignore empty texts
 
     // Handle Input Transaksi 
     // Format: "+ 50000 Gaji" atau "- 25000 Makan"
@@ -300,7 +415,7 @@ serve(async (req) => {
 
     // Default response (Help)
     if (lowerText === '/start' || lowerText === '/help' || lowerText === 'halo' || lowerText === 'hi' || lowerText === 'menu') {
-      await reply('👋 <b>Halo! Saya asisten KeuanganKu Anda!</b>\n\nSilakan ngobrol santai untuk mencatat transaksi:\n\n🟢 <b>Pemasukan:</b>\n<code>+ 50000 Gaji bulanan</code>\n\n🔴 <b>Pengeluaran:</b>\n<code>- 25000 Beli Kopi</code>\n\n🐷 <b>Bikin & Isi Celengan:</b>\n<code>buat tabungan 15000000 Laptop</code>\n<code>nabung 20000 laptop</code>\n\n📊 <b>Cek Saldo:</b>\nKetik saja <code>laporan</code> atau <code>saldo</code>')
+      await reply('👋 <b>Halo! Saya asisten KeuanganKu Pintar Anda!</b> 🤖\n\nSilakan ngobrol santai atau <b>Kirim Foto Struk</b> untuk mencatat transaksi otomatis:\n\n📷 <b>Kirim Foto Struk:</b>\nLangsung kirim foto setruk belanja Anda, dan saya akan membacanya secara otomatis!\n\n🟢 <b>Pemasukan:</b>\n<code>+ 50000 Gaji bulanan</code>\n\n🔴 <b>Pengeluaran:</b>\n<code>- 25000 Beli Kopi</code>\n\n🐷 <b>Bikin & Isi Celengan:</b>\n<code>buat tabungan 15000000 Laptop</code>\n<code>nabung 20000 laptop</code>\n\n📊 <b>Cek Saldo:</b>\nKetik saja <code>laporan</code> atau <code>saldo</code>')
     }
 
     return new Response('OK')
