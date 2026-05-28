@@ -2442,9 +2442,10 @@ function saveTelegramSettings() {
   state.telegram.token = token;
   state.telegram.chatId = chatId;
   saveState();
+  syncToSupabase();
   setupTelegramWebhook();
   
-  showTelegramStatus('Pengaturan Telegram berhasil disimpan!', 'success');
+  showTelegramStatus('Pengaturan Telegram berhasil disimpan & disinkronisasi!', 'success');
 }
 
 function showTelegramStatus(msg, type) {
