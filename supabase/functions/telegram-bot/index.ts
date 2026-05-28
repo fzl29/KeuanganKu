@@ -131,17 +131,17 @@ serve(async (req) => {
       return new Response('OK')
     }
 
-    // Handle Perintah /tabung
-    if (lowerText.startsWith('/tabung')) {
+    // Handle Perintah Menabung (Bisa tanpa slash)
+    if (lowerText.startsWith('/tabung') || lowerText.startsWith('tabung') || lowerText.startsWith('nabung') || lowerText.startsWith('simpan')) {
       const parts = text.split(' ')
       if (parts.length < 2) {
-        await reply('❌ Format salah! Gunakan format:\n<code>/tabung 50000</code> (untuk celengan pertama)\natau\n<code>/tabung 50000 nama_celengan</code>')
+        await reply('❌ Kurang lengkap! Kasih tahu nominalnya ya.\nContoh: <code>nabung 50000</code> atau <code>nabung 50000 laptop</code>')
         return new Response('OK')
       }
       
       const amountStr = parts[1].replace(/[^0-9]/g, '')
       if (!amountStr || isNaN(Number(amountStr))) {
-        await reply('❌ Nominal harus berupa angka yang valid.')
+        await reply('❌ Nominal uangnya harus berupa angka ya.')
         return new Response('OK')
       }
       const amount = Number(amountStr)
@@ -188,17 +188,17 @@ serve(async (req) => {
         .upsert(payload, { onConflict: 'sync_code' })
 
       if (upsertError) {
-        await reply(`❌ Gagal menyimpan tabungan ke Cloud: ${upsertError.message}`)
+        await reply(`❌ Waduh, gagal menyimpan tabungan ke Cloud: ${upsertError.message}`)
       } else {
         const s = currentState.savings[targetIdx]
         const pct = Math.min(Math.round((s.terkumpul / s.target) * 100), 100)
-        await reply(`✅ <b>Berhasil Menabung (Cloud Sync)!</b>\n\n🐷 Celengan: <b>${s.nama}</b>\n➕ Ditambah: <b>${rp(amount)}</b>\n\n📊 Terkumpul: <b>${rp(s.terkumpul)}</b> / ${rp(s.target)} (${pct}%)`)
+        await reply(`✅ <b>Asyik, Berhasil Nabung!</b>\n\n🐷 Celengan: <b>${s.nama}</b>\n➕ Masuk: <b>${rp(amount)}</b>\n\n📊 Terkumpul: <b>${rp(s.terkumpul)}</b> / ${rp(s.target)} (${pct}%)`)
       }
       return new Response('OK')
     }
 
-    // Handle Perintah /laporan
-    if (lowerText === '/laporan' || lowerText === 'laporan' || lowerText === '/status') {
+    // Handle Perintah laporan (Bisa tanpa slash)
+    if (lowerText === '/laporan' || lowerText === 'laporan' || lowerText === '/status' || lowerText === 'saldo' || lowerText === 'cek saldo') {
        // Ambil data terbaru dari cloud
        const { data } = await supabase
         .from('keuanganku_sync')
@@ -229,8 +229,8 @@ serve(async (req) => {
     }
 
     // Default response (Help)
-    if (lowerText === '/start' || lowerText === '/help' || lowerText === 'menu') {
-      await reply('👋 <b>Halo! Server Bot KeuanganKu 24/7 Aktif!</b>\n\nKini Anda bisa langsung mencatat transaksi tanpa buka web:\n\nCatat Pemasukan:\n<code>+ 50000 Gaji bulanan</code>\n\nCatat Pengeluaran:\n<code>- 25000 Beli Kopi</code>\n\nIsi Celengan / Tabungan:\n<code>/tabung 20000 laptop</code>\n\nLihat Saldo:\n<code>/laporan</code>')
+    if (lowerText === '/start' || lowerText === '/help' || lowerText === 'halo' || lowerText === 'hi' || lowerText === 'menu') {
+      await reply('👋 <b>Halo! Saya asisten KeuanganKu Anda!</b>\n\nSilakan ngobrol santai untuk mencatat transaksi:\n\n🟢 <b>Pemasukan:</b>\n<code>+ 50000 Gaji bulanan</code>\n\n🔴 <b>Pengeluaran:</b>\n<code>- 25000 Beli Kopi</code>\n\n🐷 <b>Isi Celengan:</b>\n<code>nabung 20000 laptop</code>\n\n📊 <b>Cek Saldo:</b>\nKetik saja <code>laporan</code> atau <code>saldo</code>')
     }
 
     return new Response('OK')
