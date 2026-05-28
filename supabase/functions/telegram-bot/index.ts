@@ -94,6 +94,11 @@ Keluarkan HANYA dalam format JSON murni berikut (tanpa blok markdown atau teks t
 { "amount": 150000, "desc": "Belanja di Indomaret" }
 Penting: 'amount' HANYA BERUPA ANGKA POSITIF (tanpa titik, koma, atau Rp). 'desc' adalah kalimat singkat nama tempatnya.`
 
+      let mimeType = imgBlob.type || 'image/jpeg'
+      if (mimeType === 'application/octet-stream') {
+         mimeType = filePath.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg'
+      }
+
       const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -101,7 +106,7 @@ Penting: 'amount' HANYA BERUPA ANGKA POSITIF (tanpa titik, koma, atau Rp). 'desc
           contents: [{
             parts: [
               { text: prompt },
-              { inline_data: { mime_type: imgBlob.type || 'image/jpeg', data: base64String } }
+              { inline_data: { mime_type: mimeType, data: base64String } }
             ]
           }]
         })
