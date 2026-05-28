@@ -129,8 +129,8 @@ Penting: 'amount' HANYA BERUPA ANGKA POSITIF (tanpa titik, koma, atau Rp). 'desc
         }
 
         const amount = Number(parsed.amount)
-        const aiDesc = parsed.desc || 'Pengeluaran (Struk AI)'
-        const nama = text ? `${text} - ${aiDesc}` : aiDesc
+        const nama = parsed.desc || 'Belanja (Struk AI)'
+        const keterangan = text || ''
         const type = 'expense'
 
         // 4. Proses Transaksi
@@ -153,6 +153,7 @@ Penting: 'amount' HANYA BERUPA ANGKA POSITIF (tanpa titik, koma, atau Rp). 'desc
           type,
           amount,
           nama,
+          keterangan,
           cat: 'Lain-lain',
           date: new Date().toISOString()
         })

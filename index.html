@@ -956,8 +956,12 @@
       </div>
     </div>
     <div class="form-group">
-      <label class="form-label" for="inp-nama">Keterangan</label>
-      <input class="form-input" type="text" id="inp-nama" placeholder="cth: Gaji Mei, Makan Siang..."/>
+      <label class="form-label" for="inp-nama">Nama Transaksi</label>
+      <input class="form-input" type="text" id="inp-nama" placeholder="cth: Gaji Mei, Beli Baju..."/>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="inp-keterangan">Keterangan Tambahan (Opsional)</label>
+      <input class="form-input" type="text" id="inp-keterangan" placeholder="cth: Catatan khusus, nota..."/>
     </div>
     <div class="form-group">
       <label class="form-label" for="inp-amount">Jumlah (Rp)</label>
@@ -1151,6 +1155,7 @@ function openModal() {
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('inp-date').value = today;
   document.getElementById('inp-nama').value = '';
+  document.getElementById('inp-keterangan').value = '';
   document.getElementById('inp-amount').value = '';
   setType(state.type);
   document.getElementById('modal-overlay').classList.add('open');
@@ -1166,13 +1171,14 @@ function setType(t) {
 
 function saveTransaction() {
   const nama = document.getElementById('inp-nama').value.trim();
+  const keterangan = document.getElementById('inp-keterangan').value.trim();
   const amount = parseFloat(document.getElementById('inp-amount').value);
   const cat = document.getElementById('inp-cat').value;
   const date = document.getElementById('inp-date').value;
   if (!nama) { document.getElementById('inp-nama').focus(); return; }
   if (!amount || amount <= 0) { document.getElementById('inp-amount').focus(); return; }
   
-  const newTxn = { id: Date.now(), nama, amount, cat, date, type: state.type };
+  const newTxn = { id: Date.now(), nama, keterangan, amount, cat, date, type: state.type };
   state.transactions.unshift(newTxn);
   saveState();
 
@@ -1443,6 +1449,7 @@ function renderFullTxnList() {
         </td>
         <td><span style="font-weight: 500;">${dateStr}</span></td>
         <td><span style="font-weight: 600; color: var(--text);">${t.nama}</span></td>
+        <td><span style="color: var(--text2); font-size: 13px;">${t.keterangan || '-'}</span></td>
         <td><span style="color: var(--text2); font-weight: 500;">${t.cat}</span></td>
         <td><span class="badge-type ${badgeCls}">${badgeText}</span></td>
         <td><span class="stat-value ${amountCls}" style="font-size: 13px; font-weight: 700;">${amountStr}</span></td>
@@ -1467,6 +1474,7 @@ function renderFullTxnList() {
               <th></th>
               <th>Tanggal</th>
               <th>Nama Transaksi</th>
+              <th>Keterangan</th>
               <th>Kategori</th>
               <th>Jenis</th>
               <th>Jumlah</th>
