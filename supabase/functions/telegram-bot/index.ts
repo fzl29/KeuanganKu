@@ -197,6 +197,76 @@ serve(async (req) => {
       return new Response('OK')
     }
 
+    // Handle Perintah Bikin Celengan Baru
+    if (lowerText.startsWith('buat tabungan') || lowerText.startsWith('buat celengan')) {
+      const cleanedLower = lowerText.replace('buat tabungan', '').replace('buat celengan', '').trim()
+      const originalParts = text.substring(lowerText.indexOf(cleanedLower)).split(' ')
+      const lowerParts = cleanedLower.split(' ')
+      
+      let targetStr = ''
+      let nameParts = []
+      
+      for (let i = 0; i < lowerParts.length; i++) {
+        const p = lowerParts[i].replace(/[^0-9]/g, '')
+        if (p && !targetStr) {
+          targetStr = p
+        } else {
+          if (lowerParts[i] !== 'untuk' && lowerParts[i] !== 'buat') {
+             // Simpan casing asli
+             nameParts.push(originalParts[i])
+          }
+        }
+      }
+
+      if (!targetStr) {
+        await reply('❌ Target kumpul uangnya berapa nih?\nContoh: <code>buat tabungan 15000000 untuk Laptop</code>')
+        return new Response('OK')
+      }
+      
+      const targetAmount = Number(targetStr)
+      const name = nameParts.join(' ').trim() || 'Celengan Baru'
+
+      const { data, error: fetchError } = await supabase
+        .from('keuanganku_sync')
+        .select('state_data')
+        .eq('sync_code', syncCode)
+        .maybeSingle()
+
+      if (fetchError || !data || !data.state_data) {
+        await reply(`❌ Gagal mengambil data Cloud. Pastikan sinkronisasi web jalan.`)
+        return new Response('OK')
+      }
+
+      const currentState = data.state_data
+      if (!currentState.savings) {
+        currentState.savings = []
+      }
+      
+      currentState.savings.push({
+        nama: name,
+        target: targetAmount,
+        terkumpul: 0
+      })
+      
+      const payload = {
+        sync_code: syncCode,
+        state_data: currentState,
+        updated_at: new Date().toISOString()
+      }
+      
+      const { error: upsertError } = await supabase
+        .from('keuanganku_sync')
+        .upsert(payload, { onConflict: 'sync_code' })
+
+      if (upsertError) {
+        await reply(`❌ Gagal bikin celengan di Cloud: ${upsertError.message}`)
+      } else {
+        const firstWord = name.split(' ')[0]
+        await reply(`✅ <b>Celengan Baru Tercipta!</b> 🎉\n\n🎯 Nama: <b>${name}</b>\n🏁 Target: <b>${rp(targetAmount)}</b>\n\nSekarang Anda bisa mulai mengisi celengan ini dengan ketik:\n<code>nabung 50000 ${firstWord}</code>`)
+      }
+      return new Response('OK')
+    }
+
     // Handle Perintah laporan (Bisa tanpa slash)
     if (lowerText === '/laporan' || lowerText === 'laporan' || lowerText === '/status' || lowerText === 'saldo' || lowerText === 'cek saldo') {
        // Ambil data terbaru dari cloud
@@ -230,7 +300,7 @@ serve(async (req) => {
 
     // Default response (Help)
     if (lowerText === '/start' || lowerText === '/help' || lowerText === 'halo' || lowerText === 'hi' || lowerText === 'menu') {
-      await reply('👋 <b>Halo! Saya asisten KeuanganKu Anda!</b>\n\nSilakan ngobrol santai untuk mencatat transaksi:\n\n🟢 <b>Pemasukan:</b>\n<code>+ 50000 Gaji bulanan</code>\n\n🔴 <b>Pengeluaran:</b>\n<code>- 25000 Beli Kopi</code>\n\n🐷 <b>Isi Celengan:</b>\n<code>nabung 20000 laptop</code>\n\n📊 <b>Cek Saldo:</b>\nKetik saja <code>laporan</code> atau <code>saldo</code>')
+      await reply('👋 <b>Halo! Saya asisten KeuanganKu Anda!</b>\n\nSilakan ngobrol santai untuk mencatat transaksi:\n\n🟢 <b>Pemasukan:</b>\n<code>+ 50000 Gaji bulanan</code>\n\n🔴 <b>Pengeluaran:</b>\n<code>- 25000 Beli Kopi</code>\n\n🐷 <b>Bikin & Isi Celengan:</b>\n<code>buat tabungan 15000000 Laptop</code>\n<code>nabung 20000 laptop</code>\n\n📊 <b>Cek Saldo:</b>\nKetik saja <code>laporan</code> atau <code>saldo</code>')
     }
 
     return new Response('OK')
