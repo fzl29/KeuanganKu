@@ -1210,21 +1210,24 @@ function saveTransaction() {
   if (!nama) { document.getElementById('inp-nama').focus(); return; }
   if (!amount || amount <= 0) { document.getElementById('inp-amount').focus(); return; }
   
+  const isIncome = document.getElementById('btn-income').classList.contains('active-income');
+  const actualType = isIncome ? 'income' : 'expense';
+  
   if (editingTxnId !== null) {
     const txnIndex = state.transactions.findIndex(t => String(t.id) === String(editingTxnId));
     if (txnIndex > -1) {
-      state.transactions[txnIndex] = { ...state.transactions[txnIndex], nama, keterangan, amount, cat, date, type: state.type };
+      state.transactions[txnIndex] = { ...state.transactions[txnIndex], nama, keterangan, amount, cat, date, type: actualType };
     }
     editingTxnId = null;
   } else {
-    const newTxn = { id: Date.now(), nama, keterangan, amount, cat, date, type: state.type };
+    const newTxn = { id: Date.now(), nama, keterangan, amount, cat, date, type: actualType };
     state.transactions.unshift(newTxn);
   }
   saveState();
 
   // Send real-time Telegram Bot notification if enabled
   if (state.telegram && state.telegram.enabled && state.telegram.token && state.telegram.chatId) {
-    const typeLabel = state.type === 'income' ? '🟢 <b>Pemasukan Baru</b>' : '🔴 <b>Pengeluaran Baru</b>';
+    const typeLabel = actualType === 'income' ? '🟢 <b>Pemasukan Baru</b>' : '🔴 <b>Pengeluaran Baru</b>';
     const msgText = `${typeLabel}\n\n` +
                     `📝 <b>Keterangan:</b> ${nama}\n` +
                     `💰 <b>Jumlah:</b> ${rp(amount)}\n` +
