@@ -2164,25 +2164,36 @@ function renderStatistikPage() {
 
 function renderKategoriPage() {
   const content = document.getElementById('view-kategori');
+  if (!content) return;
+
+  const periodSel = document.getElementById('period-filter');
+  const period = periodSel ? periodSel.value : 'all';
+  const filteredTxns = filterTxnsByPeriod(state.transactions, period);
+
   const catStats = {};
-  state.transactions.forEach(t => {
-    if (!catStats[t.cat]) {
-      catStats[t.cat] = { count: 0, expense: 0, income: 0 };
+  filteredTxns.forEach(t => {
+    const c = (t.cat || 'Lainnya').trim();
+    if (!catStats[c]) {
+      catStats[c] = { count: 0, expense: 0, income: 0 };
     }
-    catStats[t.cat].count++;
+    catStats[c].count++;
     if (t.type === 'income') {
-      catStats[t.cat].income += t.amount;
+      catStats[c].income += Number(t.amount);
     } else {
-      catStats[t.cat].expense += t.amount;
+      catStats[c].expense += Number(t.amount);
     }
   });
 
-  const categories = Object.keys(state.catIcons);
+  const allCats = new Set([
+    ...Object.keys(state.catIcons),
+    ...filteredTxns.map(t => (t.cat || 'Lainnya').trim())
+  ]);
+  const categories = Array.from(allCats);
 
   let html = `<div style="display:flex;flex-direction:column;gap:20px;width:100%;">
     <div class="card" style="margin-top:0;">
       <div class="card-header">
-        <div class="card-title">Semua Kategori (${categories.length})</div>
+        <div class="card-title">Kategori Periode Ini (${categories.length})</div>
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(240px, 1fr));gap:14px;">`;
 
