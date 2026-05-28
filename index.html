@@ -2553,7 +2553,7 @@ async function sendTelegramMessage(text) {
 }
 
 function setupTelegramWebhook() {
-  if (!state.telegram || !state.telegram.enabled || !state.telegram.token || !state.telegram.chatId) {
+  if (!state.telegram || !state.telegram.token || !state.telegram.chatId) {
     return;
   }
   
