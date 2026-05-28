@@ -38,15 +38,19 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey)
 
     // Helper kirim pesan ke Telegram
-    const reply = async (msg: string) => {
+    const reply = async (msg: string, replyMarkup?: any) => {
+      const payload: any = {
+        chat_id: allowedChatId,
+        text: msg,
+        parse_mode: 'HTML'
+      }
+      if (replyMarkup) {
+        payload.reply_markup = replyMarkup
+      }
       await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: allowedChatId,
-          text: msg,
-          parse_mode: 'HTML'
-        })
+        body: JSON.stringify(payload)
       })
     }
 
@@ -269,7 +273,7 @@ Penting: 'amount' HANYA BERUPA ANGKA POSITIF (tanpa titik, koma, atau Rp). 'desc
     }
 
     // Handle Perintah Laporan Tabungan
-    if (lowerText === 'tabungan' || lowerText === 'laporan tabungan' || lowerText === 'lihat tabungan' || lowerText === 'cek tabungan' || lowerText === '/tabungan') {
+    if (lowerText === 'tabungan' || lowerText === 'laporan tabungan' || lowerText === 'lihat tabungan' || lowerText === 'cek tabungan' || lowerText === '/tabungan' || lowerText === '🐷 tabungan') {
        const { data } = await supabase
         .from('keuanganku_sync')
         .select('state_data')
@@ -430,7 +434,7 @@ Penting: 'amount' HANYA BERUPA ANGKA POSITIF (tanpa titik, koma, atau Rp). 'desc
     }
 
     // Handle Perintah laporan (Bisa tanpa slash)
-    if (lowerText === '/laporan' || lowerText === 'laporan' || lowerText === '/status' || lowerText === 'saldo' || lowerText === 'cek saldo') {
+    if (lowerText === '/laporan' || lowerText === 'laporan' || lowerText === '/status' || lowerText === 'saldo' || lowerText === 'cek saldo' || lowerText === '📊 laporan') {
        // Ambil data terbaru dari cloud
        const { data } = await supabase
         .from('keuanganku_sync')
@@ -460,9 +464,19 @@ Penting: 'amount' HANYA BERUPA ANGKA POSITIF (tanpa titik, koma, atau Rp). 'desc
        return new Response('OK')
     }
 
-    // Default response (Help)
-    if (lowerText === '/start' || lowerText === '/help' || lowerText === 'halo' || lowerText === 'hi' || lowerText === 'menu') {
-      await reply('👋 <b>Halo! Saya asisten KeuanganKu Pintar Anda!</b> 🤖\n\nSilakan ngobrol santai atau <b>Kirim Foto Struk</b> untuk mencatat transaksi otomatis:\n\n📷 <b>Kirim Foto Struk:</b>\nLangsung kirim foto setruk belanja Anda, dan saya akan membacanya secara otomatis!\n\n🟢 <b>Pemasukan:</b>\n<code>+ 50000 Gaji bulanan</code>\n\n🔴 <b>Pengeluaran:</b>\n<code>- 25000 Beli Kopi</code>\n\n🐷 <b>Bikin & Isi Celengan:</b>\n<code>buat tabungan 15000000 Laptop</code>\n<code>nabung 20000 laptop</code>\n\n📊 <b>Cek Saldo:</b>\nKetik saja <code>laporan</code> atau <code>saldo</code>')
+    // Default response (Help & Menu)
+    if (lowerText === '/start' || lowerText === '/help' || lowerText === 'halo' || lowerText === 'hi' || lowerText === 'menu' || lowerText === '📝 panduan') {
+      const keyboard = {
+        keyboard: [
+          [{ text: "📊 Laporan" }, { text: "🐷 Tabungan" }],
+          [{ text: "📝 Panduan" }]
+        ],
+        resize_keyboard: true,
+        one_time_keyboard: false
+      };
+      
+      await reply('👋 <b>Halo! Saya asisten KeuanganKu Pintar Anda!</b> 🤖\n\nSilakan pilih menu instan di bawah ini, atau Anda bisa langsung:\n\n📷 <b>Kirim Foto Struk</b>\nUntuk mencatat transaksi otomatis\n\n🟢 <b>Ketik Pemasukan:</b>\n<code>+ 50000 Gaji bulanan</code>\n\n🔴 <b>Ketik Pengeluaran:</b>\n<code>- 25000 Beli Kopi</code>\n\n🐷 <b>Ketik Bikin Celengan:</b>\n<code>buat tabungan 15000000 Laptop</code>', keyboard)
+      return new Response('OK')
     }
 
     return new Response('OK')
