@@ -129,7 +129,8 @@ Penting: 'amount' HANYA BERUPA ANGKA POSITIF (tanpa titik, koma, atau Rp). 'desc
         }
 
         const amount = Number(parsed.amount)
-        const nama = parsed.desc || 'Pengeluaran (Struk AI)'
+        const aiDesc = parsed.desc || 'Pengeluaran (Struk AI)'
+        const nama = text ? `${text} - ${aiDesc}` : aiDesc
         const type = 'expense'
 
         // 4. Proses Transaksi
