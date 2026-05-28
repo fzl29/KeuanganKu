@@ -463,12 +463,45 @@ Penting: 'amount' HANYA BERUPA ANGKA POSITIF (tanpa titik, koma, atau Rp). 'desc
        await reply(reportText);
        return new Response('OK')
     }
+    // Handle Perintah Riwayat Transaksi
+    if (lowerText === 'riwayat' || lowerText === 'riwayat transaksi' || lowerText === 'semua transaksi' || lowerText === '📒 riwayat transaksi') {
+       const { data } = await supabase
+        .from('keuanganku_sync')
+        .select('state_data')
+        .eq('sync_code', syncCode)
+        .maybeSingle()
+        
+       if (!data || !data.state_data || !data.state_data.transactions || data.state_data.transactions.length === 0) {
+         await reply('❌ Anda belum memiliki catatan transaksi apa pun.')
+         return new Response('OK')
+       }
+       
+       const txns = data.state_data.transactions.slice(0, 15) // Ambil 15 teratas
+       let reportText = `📒 <b>15 TRANSAKSI TERBARU</b>\n\n`;
+       
+       txns.forEach((t: any) => {
+         const icon = t.type === 'income' ? '🟢' : '🔴';
+         const dateStr = t.date ? new Date(t.date).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'}) : '';
+         reportText += `${icon} <b>${rp(t.amount)}</b>\n`;
+         reportText += `📝 ${t.nama} ${t.keterangan ? `(${t.keterangan})` : ''}\n`;
+         reportText += `📅 ${dateStr} | 📁 ${t.cat}\n\n`;
+       });
+       
+       if (data.state_data.transactions.length > 15) {
+         reportText += `<i>... dan ${data.state_data.transactions.length - 15} transaksi lainnya (Cek di Web KeuanganKu)</i>`;
+       }
+       
+       await reply(reportText.trim());
+       return new Response('OK')
+    }
+
 
     // Default response (Help & Menu)
     if (lowerText === '/start' || lowerText === '/help' || lowerText === 'halo' || lowerText === 'hi' || lowerText === 'menu' || lowerText === '📝 panduan') {
       const keyboard = {
         keyboard: [
           [{ text: "📊 Laporan" }, { text: "🐷 Tabungan" }],
+          [{ text: "📒 Riwayat Transaksi" }],
           [{ text: "📝 Panduan" }]
         ],
         resize_keyboard: true,
