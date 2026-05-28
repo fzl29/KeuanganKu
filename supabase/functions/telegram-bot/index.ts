@@ -131,6 +131,72 @@ serve(async (req) => {
       return new Response('OK')
     }
 
+    // Handle Perintah /tabung
+    if (lowerText.startsWith('/tabung')) {
+      const parts = text.split(' ')
+      if (parts.length < 2) {
+        await reply('❌ Format salah! Gunakan format:\n<code>/tabung 50000</code> (untuk celengan pertama)\natau\n<code>/tabung 50000 nama_celengan</code>')
+        return new Response('OK')
+      }
+      
+      const amountStr = parts[1].replace(/[^0-9]/g, '')
+      if (!amountStr || isNaN(Number(amountStr))) {
+        await reply('❌ Nominal harus berupa angka yang valid.')
+        return new Response('OK')
+      }
+      const amount = Number(amountStr)
+      const targetName = parts.slice(2).join(' ').trim().toLowerCase()
+
+      const { data, error: fetchError } = await supabase
+        .from('keuanganku_sync')
+        .select('state_data')
+        .eq('sync_code', syncCode)
+        .maybeSingle()
+
+      if (fetchError || !data || !data.state_data) {
+        await reply(`❌ Gagal mengambil data Cloud. Pastikan Anda telah melakukan sinkronisasi minimal satu kali di web.`)
+        return new Response('OK')
+      }
+
+      const currentState = data.state_data
+      if (!currentState.savings || currentState.savings.length === 0) {
+        await reply('❌ Anda belum memiliki celengan/tabungan. Silakan buat celengan baru di aplikasi web terlebih dahulu.')
+        return new Response('OK')
+      }
+
+      let targetIdx = 0 // default ke celengan pertama
+      if (targetName) {
+        const foundIdx = currentState.savings.findIndex((s: any) => s.nama.toLowerCase().includes(targetName))
+        if (foundIdx !== -1) {
+          targetIdx = foundIdx
+        } else {
+          await reply(`❌ Celengan dengan nama yang mengandung kata "${targetName}" tidak ditemukan.\nCelengan Anda yang tersedia:\n` + currentState.savings.map((s:any) => `- ${s.nama}`).join('\n'))
+          return new Response('OK')
+        }
+      }
+
+      currentState.savings[targetIdx].terkumpul += amount
+      
+      const payload = {
+        sync_code: syncCode,
+        state_data: currentState,
+        updated_at: new Date().toISOString()
+      }
+      
+      const { error: upsertError } = await supabase
+        .from('keuanganku_sync')
+        .upsert(payload, { onConflict: 'sync_code' })
+
+      if (upsertError) {
+        await reply(`❌ Gagal menyimpan tabungan ke Cloud: ${upsertError.message}`)
+      } else {
+        const s = currentState.savings[targetIdx]
+        const pct = Math.min(Math.round((s.terkumpul / s.target) * 100), 100)
+        await reply(`✅ <b>Berhasil Menabung (Cloud Sync)!</b>\n\n🐷 Celengan: <b>${s.nama}</b>\n➕ Ditambah: <b>${rp(amount)}</b>\n\n📊 Terkumpul: <b>${rp(s.terkumpul)}</b> / ${rp(s.target)} (${pct}%)`)
+      }
+      return new Response('OK')
+    }
+
     // Handle Perintah /laporan
     if (lowerText === '/laporan' || lowerText === 'laporan' || lowerText === '/status') {
        // Ambil data terbaru dari cloud
@@ -164,7 +230,7 @@ serve(async (req) => {
 
     // Default response (Help)
     if (lowerText === '/start' || lowerText === '/help' || lowerText === 'menu') {
-      await reply('👋 <b>Halo! Server Bot KeuanganKu 24/7 Aktif!</b>\n\nKini Anda bisa langsung mencatat transaksi tanpa buka web:\n\nCatat Pemasukan:\n<code>+ 50000 Gaji bulanan</code>\n\nCatat Pengeluaran:\n<code>- 25000 Beli Kopi</code>\n\nLihat Saldo:\n<code>/laporan</code>')
+      await reply('👋 <b>Halo! Server Bot KeuanganKu 24/7 Aktif!</b>\n\nKini Anda bisa langsung mencatat transaksi tanpa buka web:\n\nCatat Pemasukan:\n<code>+ 50000 Gaji bulanan</code>\n\nCatat Pengeluaran:\n<code>- 25000 Beli Kopi</code>\n\nIsi Celengan / Tabungan:\n<code>/tabung 20000 laptop</code>\n\nLihat Saldo:\n<code>/laporan</code>')
     }
 
     return new Response('OK')
