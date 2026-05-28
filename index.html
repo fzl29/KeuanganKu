@@ -2947,12 +2947,49 @@ async function triggerManualSyncDown() {
   }
 }
 
+async function startAutoSync() {
+  if (!state.supabase || !state.supabase.enabled || !state.supabase.syncCode) return;
+  
+  const refreshUI = () => {
+    if (currentPage === 'dashboard') renderDashboard();
+    else if (currentPage === 'transaksi') renderTransactionPage();
+    else if (currentPage === 'anggaran') renderBudgetPage();
+    else if (currentPage === 'tabungan') renderTabunganPage();
+  };
+
+  // Initial pull on load
+  if (supabaseClient) {
+    const success = await syncFromSupabase(true);
+    if (success) refreshUI();
+  }
+
+  // Pull every 5 seconds for Realtime Telegram updates
+  setInterval(async () => {
+    if (!supabaseClient) return;
+    const oldTx = JSON.stringify(state.transactions || []);
+    const oldSav = JSON.stringify(state.savings || []);
+    
+    const success = await syncFromSupabase(true);
+    if (success) {
+       const newTx = JSON.stringify(state.transactions || []);
+       const newSav = JSON.stringify(state.savings || []);
+       
+       // Only refresh UI if something actually changed from Telegram
+       if (oldTx !== newTx || oldSav !== newSav) {
+         refreshUI();
+         showNotification('Data baru dari Telegram disinkronkan! 🔄', 'success');
+       }
+    }
+  }, 5000);
+}
+
 // Initializing page load
 initSupabase();
 applyTheme();
 populateCategoryDropdown();
 renderDashboard();
 setupTelegramWebhook();
+startAutoSync();
 </script>
 </body>
 </html>
