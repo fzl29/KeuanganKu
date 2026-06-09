@@ -660,30 +660,30 @@
     background: rgba(255, 92, 92, 0.1) !important;
   }
 
-  /* Custom scrollbar for modern aesthetics in category transactions list */
-  .cat-txns-list {
+  /* Custom scrollbar for modern aesthetics in category transactions list & budget legend */
+  .cat-txns-list, #budget-chart-legend {
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
   }
-  .light .cat-txns-list {
+  .light .cat-txns-list, .light #budget-chart-legend {
     scrollbar-color: rgba(0, 0, 0, 0.1) transparent;
   }
-  .cat-txns-list::-webkit-scrollbar {
+  .cat-txns-list::-webkit-scrollbar, #budget-chart-legend::-webkit-scrollbar {
     width: 5px;
     height: 5px;
   }
-  .cat-txns-list::-webkit-scrollbar-track {
+  .cat-txns-list::-webkit-scrollbar-track, #budget-chart-legend::-webkit-scrollbar-track {
     background: transparent;
   }
-  .cat-txns-list::-webkit-scrollbar-thumb {
+  .cat-txns-list::-webkit-scrollbar-thumb, #budget-chart-legend::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.15);
     border-radius: 10px;
     transition: background var(--transition);
   }
-  .light .cat-txns-list::-webkit-scrollbar-thumb {
+  .light .cat-txns-list::-webkit-scrollbar-thumb, .light #budget-chart-legend::-webkit-scrollbar-thumb {
     background: rgba(0, 0, 0, 0.15);
   }
-  .cat-txns-list::-webkit-scrollbar-thumb:hover {
+  .cat-txns-list::-webkit-scrollbar-thumb:hover, #budget-chart-legend::-webkit-scrollbar-thumb:hover {
     background: var(--gold);
   }
 </style>
