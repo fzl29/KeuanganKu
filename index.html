@@ -1992,18 +1992,18 @@ function renderBudgetCategoryChart() {
   const ctx = chartEl.getContext('2d');
   const tickColor = isLight ? '#555' : 'rgba(255, 255, 255, 0.5)';
   const gridColor = isLight ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)';
-  const colorPalette = [
-    '#FFC53E',
-    '#E0A31B',
-    '#FFE194',
-    '#B58010',
-    '#FFF0C2',
-    '#8C6203',
-    '#FFD275',
-    '#6E4B00'
-  ];
+  const clsColors = {
+    food: '#FFC53E',
+    salary: '#4ADE80',
+    shop: '#FF5C5C',
+    transport: '#60A5FA',
+    health: '#A78BFA'
+  };
 
-  const backgroundColors = labels.map((_, idx) => colorPalette[idx % colorPalette.length]);
+  const backgroundColors = labels.map(label => {
+    const iconData = state.catIcons[label] || { cls: 'food' };
+    return clsColors[iconData.cls] || '#FFC53E';
+  });
 
   budgetCategoryChart = new Chart(ctx, {
     type: 'bar',
@@ -2069,7 +2069,8 @@ function renderBudgetCategoryChart() {
       legendEl.innerHTML = `<div style="text-align: center; color: var(--text3); font-size: 11px; padding: 10px 0;">Belum ada data pengeluaran pada bulan ini.</div>`;
     } else {
       legendEl.innerHTML = labels.map((label, idx) => {
-        const color = colorPalette[idx % colorPalette.length];
+        const iconData = state.catIcons[label] || { cls: 'food' };
+        const color = clsColors[iconData.cls] || '#FFC53E';
         return `
           <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.02);">
             <div style="display: flex; align-items: center; gap: 8px;">
