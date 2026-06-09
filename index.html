@@ -1334,8 +1334,11 @@ function renderDashboard() {
 
   const s = getStats();
   
-  // Update ATM Card
-  document.getElementById('stat-saldo').textContent = rp(s.saldo);
+  // Update ATM Card (All-time Cumulative Balance)
+  const totalIncomeAllTime = state.transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount), 0);
+  const totalExpenseAllTime = state.transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount), 0);
+  const cumulativeBalance = totalIncomeAllTime - totalExpenseAllTime;
+  document.getElementById('stat-saldo').textContent = rp(cumulativeBalance);
   const saldoDesc = document.getElementById('saldo-desc');
   if (s.saldo > 0) { saldoDesc.style.color = '#065f46'; saldoDesc.textContent = '↑ Surplus bulan ini'; }
   else if (s.saldo < 0) { saldoDesc.style.color = '#991b1b'; saldoDesc.textContent = '↓ Defisit bulan ini'; }
