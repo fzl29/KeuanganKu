@@ -1666,6 +1666,35 @@ function renderBudgetPage() {
   categories.forEach(cat => {
     const iconData = state.catIcons[cat] || { cls: 'food', icon: 'ti-dots' };
     const stats = catStats[cat] || { count: 0, expense: 0, income: 0 };
+    
+    // Filter transactions of this category for the current month
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    const catTxns = state.transactions.filter(t => (t.cat || 'Lainnya').trim() === cat);
+    const thisMonthTxns = catTxns.filter(t => {
+      if (!t.date) return false;
+      const d = new Date(t.date);
+      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    }).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    const txnRows = thisMonthTxns.map(t => {
+      const amtStr = t.type === 'income' ? '+' + rp(t.amount) : '-' + rp(t.amount);
+      const amtCls = t.type === 'income' ? 'var(--success)' : 'var(--danger)';
+      const dateStr = t.date ? new Date(t.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) : '—';
+      return `
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;padding:6px 0;border-bottom:1px solid rgba(255, 255, 255, 0.05);">
+          <div style="display:flex;flex-direction:column;gap:1px;min-width:0;flex:1;text-align:left;">
+            <span style="font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.nama}</span>
+            <span style="font-size:9px;color:var(--text2);">${dateStr} ${t.keterangan ? `• ${t.keterangan}` : ''}</span>
+          </div>
+          <span style="font-family:var(--mono);font-weight:700;color:${amtCls};margin-left:8px;flex-shrink:0;">${amtStr}</span>
+        </div>
+      `;
+    }).join('');
+
+    const listContent = txnRows || `<div style="font-size:10px;color:var(--text3);text-align:center;padding:10px 0;">Tidak ada transaksi bulan ini</div>`;
+
     katHtml += `
         <div class="card" style="padding:16px;border-color:var(--border);background:var(--bg3);display:flex;flex-direction:column;gap:12px;">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
@@ -1697,6 +1726,18 @@ function renderBudgetPage() {
               <span style="color:var(--danger);font-family:var(--mono);">${rp(stats.expense)}</span>
             </div>
           </div>
+          
+          <!-- Dropdown Trigger -->
+          <div style="display:flex;justify-content:center;align-items:center;border-top:0.5px solid var(--border);padding-top:8px;margin-top:2px;">
+            <button onclick="toggleCategoryTxns(this)" style="background:none;border:none;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;padding:4px 8px;border-radius:4px;transition:all var(--transition);width:100%;justify-content:center;background:rgba(255,255,255,0.02);">
+              <span>Lihat Transaksi (${thisMonthTxns.length})</span> <i class="ti ti-chevron-down" style="transition:transform 0.2s;"></i>
+            </button>
+          </div>
+          
+          <!-- Dropdown Content (Transactions) -->
+          <div class="cat-txns-list" style="display:none;flex-direction:column;gap:4px;max-height:160px;overflow-y:auto;padding-right:4px;">
+            ${listContent}
+          </div>
         </div>`;
   });
   katHtml += `</div>`;
@@ -1714,13 +1755,13 @@ function renderBudgetPage() {
           <select class="form-input" id="new-cat-icon">
             <option value="ti-book">ti-book (Buku)</option>
             <option value="ti-car">ti-car (Mobil)</option>
-            <option value="ti-home">ti-home (Rumah)</option>
-            <option value="ti-gift">ti-gift (Hadiah)</option>
-            <option value="ti-shirt">ti-shirt (Pakaian)</option>
-            <option value="ti-device-tv">ti-device-tv (TV/Film)</option>
-            <option value="ti-users">ti-users (Keluarga)</option>
-            <option value="ti-coin">ti-coin (Koin)</option>
+            <option value="ti-device-gamepad-2">ti-device-gamepad-2 (Gamepad)</option>
             <option value="ti-dots">ti-dots (Lainnya)</option>
+            <option value="ti-heart">ti-heart (Kesehatan)</option>
+            <option value="ti-home">ti-home (Rumah)</option>
+            <option value="ti-cash">ti-cash (Uang)</option>
+            <option value="ti-shopping-bag">ti-shopping-bag (Belanja)</option>
+            <option value="ti-soup">ti-soup (Makanan)</option>
           </select>
         </div>
         <div style="width:140px;">
@@ -1758,6 +1799,24 @@ function renderBudgetPage() {
       ${addCatHtml}
     </div>
   `;
+}
+
+function toggleCategoryTxns(btn) {
+  const card = btn.closest('.card');
+  const container = card.querySelector('.cat-txns-list');
+  const icon = btn.querySelector('i');
+  
+  if (container.style.display === 'none' || container.style.display === '') {
+    container.style.display = 'flex';
+    btn.querySelector('span').textContent = 'Tutup Transaksi';
+    icon.style.transform = 'rotate(180deg)';
+  } else {
+    container.style.display = 'none';
+    const hasTxns = container.querySelector('span') !== null;
+    const count = container.children.length;
+    btn.querySelector('span').textContent = `Lihat Transaksi (${count})`;
+    icon.style.transform = 'rotate(0deg)';
+  }
 }
 
 async function editBudgetLimit(cat) {
