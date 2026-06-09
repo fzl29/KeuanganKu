@@ -770,11 +770,29 @@
           <div style="font-size:11px;color:var(--text2);margin-top:2px;" id="page-sub">Selamat datang kembali 👋</div>
         </div>
       </div>
-      <div class="topbar-right">
-        <select class="period-select" id="period-select" onchange="changePeriod(this.value)">
-          <option value="mei2026">Mei 2026</option>
-          <option value="apr2026">April 2026</option>
-          <option value="mar2026">Maret 2026</option>
+      <div class="topbar-right" style="display: flex; gap: 8px; align-items: center;">
+        <select class="period-select" id="select-month" onchange="filterPeriodChanged()">
+          <option value="0">Januari</option>
+          <option value="1">Februari</option>
+          <option value="2">Maret</option>
+          <option value="3">April</option>
+          <option value="4">Mei</option>
+          <option value="5">Juni</option>
+          <option value="6">Juli</option>
+          <option value="7">Agustus</option>
+          <option value="8">September</option>
+          <option value="9">Oktober</option>
+          <option value="10">November</option>
+          <option value="11">Desember</option>
+        </select>
+        <select class="period-select" id="select-year" onchange="filterPeriodChanged()">
+          <option value="2024">2024</option>
+          <option value="2025">2025</option>
+          <option value="2026">2026</option>
+          <option value="2027">2027</option>
+          <option value="2028">2028</option>
+          <option value="2029">2029</option>
+          <option value="2030">2030</option>
         </select>
         <button class="btn-add" onclick="openModal()">
           <i class="ti ti-plus" aria-hidden="true"></i> Catat Transaksi
@@ -1183,9 +1201,17 @@ function setPage(page, el) {
   else renderDashboard();
 }
 
-function changePeriod(v) { 
-  renderDashboard(); 
+function filterPeriodChanged() {
+  const mSel = document.getElementById('select-month');
+  const ySel = document.getElementById('select-year');
+  if (mSel) state.selectedMonth = parseInt(mSel.value);
+  if (ySel) state.selectedYear = parseInt(ySel.value);
   saveState();
+  
+  if (currentPage === 'dashboard') renderDashboard();
+  else if (currentPage === 'transaksi') renderFullTxnList();
+  else if (currentPage === 'anggaran') renderBudgetPage();
+  else if (currentPage === 'tabungan') renderTabunganPage();
 }
 
 let editingTxnId = null;
@@ -1270,7 +1296,15 @@ function saveTransaction() {
 }
 
 function getStats() {
-  const txns = state.transactions;
+  const selectedMonth = state.selectedMonth !== undefined ? state.selectedMonth : new Date().getMonth();
+  const selectedYear = state.selectedYear !== undefined ? state.selectedYear : new Date().getFullYear();
+  
+  const txns = state.transactions.filter(t => {
+    if (!t.date) return false;
+    const d = new Date(t.date);
+    return d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
+  });
+  
   let income = 0, expense = 0;
   txns.forEach(t => { if (t.type==='income') income += t.amount; else expense += t.amount; });
   return { income, expense, saldo: income - expense, count: txns.length };
@@ -1279,6 +1313,21 @@ function getStats() {
 let dashboardBarChart = null;
 
 function renderDashboard() {
+  const selectedMonth = state.selectedMonth !== undefined ? state.selectedMonth : new Date().getMonth();
+  const selectedYear = state.selectedYear !== undefined ? state.selectedYear : new Date().getFullYear();
+  
+  // Update select elements in header
+  const mSel = document.getElementById('select-month');
+  const ySel = document.getElementById('select-year');
+  if (mSel) mSel.value = selectedMonth;
+  if (ySel) ySel.value = selectedYear;
+
+  const filteredTxns = state.transactions.filter(t => {
+    if (!t.date) return false;
+    const d = new Date(t.date);
+    return d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
+  });
+
   const s = getStats();
   
   // Update ATM Card
@@ -1291,17 +1340,17 @@ function renderDashboard() {
   // Update Right Panel Horizontal Cards
   document.getElementById('stat-income').textContent = rp(s.income);
   document.getElementById('stat-expense').textContent = rp(s.expense);
-  document.getElementById('income-count').textContent = state.transactions.filter(t=>t.type==='income').length + ' transaksi';
-  document.getElementById('expense-count').textContent = state.transactions.filter(t=>t.type==='expense').length + ' transaksi';
+  document.getElementById('income-count').textContent = filteredTxns.filter(t=>t.type==='income').length + ' transaksi';
+  document.getElementById('expense-count').textContent = filteredTxns.filter(t=>t.type==='expense').length + ' transaksi';
   
   // Update 4 Summary Cards at the top
   if (document.getElementById('stat-income-card')) {
     document.getElementById('stat-income-card').textContent = rp(s.income);
-    document.getElementById('income-count-card').textContent = state.transactions.filter(t=>t.type==='income').length + ' transaksi';
+    document.getElementById('income-count-card').textContent = filteredTxns.filter(t=>t.type==='income').length + ' transaksi';
   }
   if (document.getElementById('stat-expense-card')) {
     document.getElementById('stat-expense-card').textContent = rp(s.expense);
-    document.getElementById('expense-count-card').textContent = state.transactions.filter(t=>t.type==='expense').length + ' transaksi';
+    document.getElementById('expense-count-card').textContent = filteredTxns.filter(t=>t.type==='expense').length + ' transaksi';
   }
   if (document.getElementById('stat-tabungan-card')) {
     const totalTabungan = state.savings ? state.savings.reduce((sum, t) => sum + t.terkumpul, 0) : 0;
@@ -1327,9 +1376,18 @@ function renderDashboard() {
 function renderTxnList() {
   const el = document.getElementById('txn-list-home');
   if (!el) return;
-  // Limit to compact last 3 transactions as requested
-  const recent = state.transactions.slice(0, 3);
-  if (!recent.length) { el.innerHTML = '<div class="empty-state">Belum ada transaksi.<br>Klik "Catat Transaksi" untuk mulai.</div>'; return; }
+  
+  const selectedMonth = state.selectedMonth !== undefined ? state.selectedMonth : new Date().getMonth();
+  const selectedYear = state.selectedYear !== undefined ? state.selectedYear : new Date().getFullYear();
+  
+  const filtered = state.transactions.filter(t => {
+    if (!t.date) return false;
+    const d = new Date(t.date);
+    return d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
+  });
+
+  const recent = filtered.slice(0, 3);
+  if (!recent.length) { el.innerHTML = '<div class="empty-state">Belum ada transaksi di bulan ini.</div>'; return; }
   el.innerHTML = recent.map((t,i) => txnHTML(t, i*0.05)).join('');
 }
 
@@ -1355,15 +1413,16 @@ function renderChart() {
   const el = document.getElementById('dashboard-bar-chart');
   if (!el) return;
   
-  const s = getStats();
-  const months = ['Jan','Feb','Mar','Apr','Mei','Jun'];
-  // Aggregate real transaction data by month (Jan=0, Feb=1, etc.)
-  const mockIncome = [0, 0, 0, 0, 0, 0];
-  const mockExpense = [0, 0, 0, 0, 0, 0];
+  const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+  const mockIncome = Array(12).fill(0);
+  const mockExpense = Array(12).fill(0);
+  
+  const selectedYear = state.selectedYear !== undefined ? state.selectedYear : new Date().getFullYear();
   state.transactions.forEach(t => {
     if (t.date) {
-      const m = new Date(t.date).getMonth();
-      if (m >= 0 && m <= 5) {
+      const d = new Date(t.date);
+      if (d.getFullYear() === selectedYear) {
+        const m = d.getMonth();
         if (t.type === 'income') mockIncome[m] += t.amount;
         if (t.type === 'expense') mockExpense[m] += t.amount;
       }
@@ -1459,8 +1518,16 @@ function renderBudgetHome() {
   const budgets = state.budgets;
   const items = Object.keys(budgets).slice(0,4);
   if (!items.length) { el.innerHTML = '<div class="empty-state">Belum ada anggaran.</div>'; return; }
+  
+  const selectedMonth = state.selectedMonth !== undefined ? state.selectedMonth : new Date().getMonth();
+  const selectedYear = state.selectedYear !== undefined ? state.selectedYear : new Date().getFullYear();
+
   el.innerHTML = items.map(cat => {
-    const spent = state.transactions.filter(t=>t.cat===cat&&t.type==='expense').reduce((s,t)=>s+t.amount,0);
+    const spent = state.transactions.filter(t => {
+      if (!t.date) return false;
+      const d = new Date(t.date);
+      return t.cat === cat && t.type === 'expense' && d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
+    }).reduce((s,t)=>s+t.amount,0);
     const limit = budgets[cat].limit;
     const pct = Math.min(Math.round((spent/limit)*100), 100);
     const color = pct > 85 ? 'var(--danger)' : pct > 60 ? 'var(--gold)' : 'var(--success)';
@@ -1478,7 +1545,16 @@ function renderCategorySummary() {
   const el = document.getElementById('category-summary');
   if (!el) return;
   const cats = {};
-  state.transactions.filter(t=>t.type==='expense').forEach(t => { cats[t.cat] = (cats[t.cat]||0)+t.amount; });
+  
+  const selectedMonth = state.selectedMonth !== undefined ? state.selectedMonth : new Date().getMonth();
+  const selectedYear = state.selectedYear !== undefined ? state.selectedYear : new Date().getFullYear();
+
+  state.transactions.filter(t => {
+    if (!t.date) return false;
+    const d = new Date(t.date);
+    return t.type === 'expense' && d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
+  }).forEach(t => { cats[t.cat] = (cats[t.cat]||0)+t.amount; });
+  
   const sorted = Object.entries(cats).sort((a,b)=>b[1]-a[1]).slice(0,5);
   if (!sorted.length) { el.innerHTML = '<div class="empty-state">Data pengeluaran per kategori muncul di sini.</div>'; return; }
   const total = sorted.reduce((s,[,v])=>s+v,0);
@@ -1504,15 +1580,24 @@ function renderFullTxnList() {
   const content = document.getElementById('view-transaksi');
   if (!content) return;
   
-  if (!state.transactions.length) {
+  const selectedMonth = state.selectedMonth !== undefined ? state.selectedMonth : new Date().getMonth();
+  const selectedYear = state.selectedYear !== undefined ? state.selectedYear : new Date().getFullYear();
+  
+  const filtered = state.transactions.filter(t => {
+    if (!t.date) return false;
+    const d = new Date(t.date);
+    return d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
+  });
+  
+  if (!filtered.length) {
     content.innerHTML = `<div class="card" style="margin-top:0"><div class="empty-state" style="padding:60px 0;">
       <i class="ti ti-receipt" style="font-size:36px;color:var(--text3);display:block;margin-bottom:12px;" aria-hidden="true"></i>
-      Belum ada transaksi dicatat.
+      Belum ada transaksi dicatat untuk periode ini.
     </div></div>`;
     return;
   }
   
-  const rows = state.transactions.map((t, idx) => {
+  const rows = filtered.map((t, idx) => {
     const ci = state.catIcons[t.cat] || { cls: 'food', icon: 'ti-dots' };
     const dateStr = t.date ? new Date(t.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
     const amountStr = t.type === 'income' ? '+' + rp(t.amount) : '-' + rp(t.amount);
@@ -1540,7 +1625,7 @@ function renderFullTxnList() {
           <button class="btn-edit-txn" onclick="editTransaction('${t.id}')" title="Edit Transaksi" style="background: none; border: none; color: var(--text2); cursor: pointer; padding: 5px;">
             <i class="ti ti-edit"></i>
           </button>
-          <button class="btn-delete-txn" onclick="deleteTransaction(${idx})" title="Hapus Transaksi" style="background: none; border: none; color: var(--expense); cursor: pointer; padding: 5px;">
+          <button class="btn-delete-txn" onclick="deleteTransaction('${t.id}')" title="Hapus Transaksi" style="background: none; border: none; color: var(--expense); cursor: pointer; padding: 5px;">
             <i class="ti ti-trash"></i>
           </button>
         </td>
@@ -1582,18 +1667,21 @@ function renderFullTxnList() {
   `;
 }
 
-async function deleteTransaction(index) {
+async function deleteTransaction(id) {
   const confirmed = await showCustomConfirm({
     title: "Hapus Transaksi",
     message: "Apakah Anda yakin ingin menghapus transaksi ini? Catatan ini akan dihapus secara permanen."
   });
   if (confirmed) {
-    state.transactions.splice(index, 1);
-    saveState();
-    if (currentPage === 'dashboard') {
-      renderDashboard();
-    } else if (currentPage === 'transaksi') {
-      renderFullTxnList();
+    const idx = state.transactions.findIndex(t => String(t.id) === String(id));
+    if (idx !== -1) {
+      state.transactions.splice(idx, 1);
+      saveState();
+      if (currentPage === 'dashboard') {
+        renderDashboard();
+      } else if (currentPage === 'transaksi') {
+        renderFullTxnList();
+      }
     }
   }
 }
@@ -1643,11 +1731,18 @@ function renderBudgetPage() {
   const content = document.getElementById('view-anggaran');
   if (!content) return;
 
+  const selectedMonth = state.selectedMonth !== undefined ? state.selectedMonth : new Date().getMonth();
+  const selectedYear = state.selectedYear !== undefined ? state.selectedYear : new Date().getFullYear();
+
   const budgets = state.budgets;
   const items = Object.keys(budgets);
 
   const budgetRows = items.map(cat => {
-    const spent = state.transactions.filter(t => t.cat === cat && t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+    const spent = state.transactions.filter(t => {
+      if (!t.date) return false;
+      const d = new Date(t.date);
+      return t.cat === cat && t.type === 'expense' && d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
+    }).reduce((s, t) => s + t.amount, 0);
     const limit = budgets[cat].limit;
     const pct = Math.min(Math.round((spent / limit) * 100), 100);
     const color = pct > 85 ? 'var(--danger)' : pct > 60 ? 'var(--gold)' : 'var(--success)';
@@ -1671,7 +1766,11 @@ function renderBudgetPage() {
   }).join('');
 
   const catStats = {};
-  state.transactions.forEach(t => {
+  state.transactions.filter(t => {
+    if (!t.date) return false;
+    const d = new Date(t.date);
+    return d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
+  }).forEach(t => {
     const c = (t.cat || 'Lainnya').trim();
     if (!catStats[c]) {
       catStats[c] = { count: 0, expense: 0, income: 0 };
@@ -3288,6 +3387,18 @@ async function startAutoSync() {
 initSupabase();
 applyTheme();
 populateCategoryDropdown();
+
+if (state.selectedMonth === undefined) {
+  state.selectedMonth = new Date().getMonth();
+}
+if (state.selectedYear === undefined) {
+  state.selectedYear = new Date().getFullYear();
+}
+const mSel = document.getElementById('select-month');
+const ySel = document.getElementById('select-year');
+if (mSel) mSel.value = state.selectedMonth;
+if (ySel) ySel.value = state.selectedYear;
+
 renderDashboard();
 setupTelegramWebhook();
 startAutoSync();
