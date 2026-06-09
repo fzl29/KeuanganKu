@@ -1967,6 +1967,8 @@ function renderBudgetCategoryChart() {
   }
 
   const ctx = chartEl.getContext('2d');
+  const tickColor = isLight ? '#555' : 'rgba(255, 255, 255, 0.5)';
+  const gridColor = isLight ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)';
   const colorPalette = [
     '#FFC53E',
     '#E0A31B',
@@ -1979,14 +1981,15 @@ function renderBudgetCategoryChart() {
   ];
 
   budgetCategoryChart = new Chart(ctx, {
-    type: 'doughnut',
+    type: 'bar',
     data: {
       labels: labels,
       datasets: [{
+        label: 'Pengeluaran',
         data: data,
         backgroundColor: colorPalette.slice(0, labels.length),
-        borderWidth: 1,
-        borderColor: isLight ? '#fff' : '#1e1e24'
+        borderRadius: 6,
+        borderWidth: 0
       }]
     },
     options: {
@@ -2006,12 +2009,32 @@ function renderBudgetCategoryChart() {
               const val = context.raw;
               if (labels[0] === 'Belum Ada Pengeluaran') return 'Belum Ada Pengeluaran';
               const pct = Math.round((val / totalExp) * 100);
-              return `${context.label}: ${rp(val)} (${pct}%)`;
+              return `${rp(val)} (${pct}%)`;
             }
           }
         }
       },
-      cutout: '70%'
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: {
+            color: tickColor,
+            font: { family: 'Plus Jakarta Sans', size: 9, weight: '600' }
+          }
+        },
+        y: {
+          grid: { color: gridColor },
+          ticks: {
+            color: tickColor,
+            font: { family: 'Plus Jakarta Sans', size: 9 },
+            callback: function(val) {
+              if (val >= 1000000) return (val / 1000000) + 'jt';
+              if (val >= 1000) return (val / 1000) + 'rb';
+              return val;
+            }
+          }
+        }
+      }
     }
   });
 
