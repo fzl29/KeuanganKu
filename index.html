@@ -658,6 +658,33 @@
     color: var(--danger) !important;
     background: rgba(255, 92, 92, 0.1) !important;
   }
+
+  /* Custom scrollbar for modern aesthetics in category transactions list */
+  .cat-txns-list {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+  }
+  .light .cat-txns-list {
+    scrollbar-color: rgba(0, 0, 0, 0.1) transparent;
+  }
+  .cat-txns-list::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+  .cat-txns-list::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .cat-txns-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    transition: background var(--transition);
+  }
+  .light .cat-txns-list::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.15);
+  }
+  .cat-txns-list::-webkit-scrollbar-thumb:hover {
+    background: var(--gold);
+  }
 </style>
 </head>
 <body>
