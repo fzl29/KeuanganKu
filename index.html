@@ -835,51 +835,50 @@
           <!-- Column 1 (Left / Main Panel) -->
           <div style="display: flex; flex-direction: column; gap: 20px;">
             <!-- Premium ATM / Credit Card Mockup Row -->
-            <div style="display: flex; gap: 16px; align-items: stretch;">
+            <div style="display: flex; gap: 16px; align-items: stretch; width: 100%;">
               <!-- ATM Card -->
-              <div class="card" style="flex: 1; min-height: 180px; border: 1px solid var(--border); border-radius: 20px; padding: 24px; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; box-shadow: var(--shadow); background: var(--bg2);">
+              <div class="card" style="flex: 1; min-height: 190px; border-radius: 24px; padding: 24px 28px 24px 24px; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; background: var(--gold); border: none; box-shadow: var(--shadow);">
                 <!-- Glowing core blob in card -->
-                <div style="position: absolute; right: -20px; bottom: -20px; width: 140px; height: 140px; background: radial-gradient(circle, rgba(255, 197, 62, 0.15) 0%, transparent 70%); pointer-events: none;"></div>
+                <div style="position: absolute; right: -20px; bottom: -20px; width: 160px; height: 160px; background: radial-gradient(circle, rgba(0, 0, 0, 0.1) 0%, transparent 70%); pointer-events: none;"></div>
                 
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <span style="font-size: 10px; font-weight: 700; color: var(--gold); letter-spacing: 1px; text-transform: uppercase;">Keuanganku Card</span>
-                  <i class="ti ti-wifi" style="color: var(--text2); font-size: 16px;"></i>
-                </div>
-                
-                <div style="margin-top: 10px;">
-                  <div style="font-size: 10px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px;">Saldo Bersih</div>
-                  <div style="font-size: 24px; font-weight: 800; color: var(--text); letter-spacing: -0.5px;" id="stat-saldo">Rp 0</div>
-                  <div style="font-size: 10px; margin-top: 2px; color: var(--text2);" id="saldo-desc">—</div>
-                </div>
-                
-                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 10px;">
+                <!-- Top Row: Logo & Wireless/Infinity -->
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; z-index: 1;">
                   <div>
-                    <div style="font-family: var(--ff-mono); font-size: 13px; color: var(--text); word-spacing: 4px;">•••• •••• •••• 8888</div>
-                    <div style="font-size: 9px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px;">Premium Member</div>
+                    <span style="font-size: 10px; font-weight: 800; color: #000000; letter-spacing: 1.5px; text-transform: uppercase;">Keuanganku Card</span>
+                    <div style="font-size: 26px; font-weight: 800; color: #000000; letter-spacing: -0.5px; margin-top: 4px;" id="stat-saldo">Rp 0</div>
+                    <div style="font-size: 10px; margin-top: 2px; color: #000000; font-weight: 600; opacity: 0.8;" id="saldo-desc">—</div>
                   </div>
-                  <div style="display: flex; align-items: center; gap: 4px;">
-                    <!-- Sleek Visa/Mastercard custom graphic -->
-                    <div style="width: 24px; height: 24px; border-radius: 50%; background: var(--bg3); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center;">
-                      <div style="width: 14px; height: 14px; border-radius: 50%; background: var(--gold);"></div>
+                  <i class="ti ti-infinity" style="color: #000000; font-size: 22px; opacity: 0.85;"></i>
+                </div>
+                
+                <!-- Bottom Row: Card Details -->
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; z-index: 1; margin-top: 20px; padding-bottom: 6px;">
+                  <div style="display: flex; gap: 28px;">
+                    <div>
+                      <div style="font-size: 9px; color: #000000; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.6; margin-bottom: 2px; font-weight: 700;">Number</div>
+                      <div style="font-family: var(--ff-mono); font-size: 13px; color: #000000; word-spacing: 4px; font-weight: 700;">•••• 8888</div>
+                    </div>
+                    <div>
+                      <div style="font-size: 9px; color: #000000; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.6; margin-bottom: 2px; font-weight: 700;">Exp</div>
+                      <div style="font-family: var(--ff-mono); font-size: 13px; color: #000000; font-weight: 700;">12/29</div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              <!-- Quick Action Row -->
-              <div style="display: flex; flex-direction: column; gap: 12px; width: 130px; justify-content: stretch;">
-                <div class="card" onclick="openModal()" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; cursor: pointer; text-align: center; border: 1px solid var(--border); transition: all var(--transition); background: var(--bg2); padding: 12px; border-radius: var(--radius-md);">
-                  <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(255,197,62,0.1); border: 1px solid rgba(255,197,62,0.2); display: flex; align-items: center; justify-content: center; color: var(--gold);">
-                    <i class="ti ti-plus" style="font-size: 18px;"></i>
+                <!-- Cut-out at bottom right for Add Money -->
+                <div class="card-cutout" style="position: absolute; bottom: 0; right: 0; width: 140px; height: 56px; background: var(--bg); border-top-left-radius: 20px; display: flex; align-items: center; justify-content: center; transition: background var(--transition), border-color var(--transition);">
+                  <!-- Concave corner fillers (smooth rounding of the cut-out edges) -->
+                  <div style="position: absolute; left: -16px; bottom: 0; width: 16px; height: 16px; background: var(--gold); pointer-events: none;">
+                    <div style="width: 100%; height: 100%; background: var(--bg); border-bottom-right-radius: 16px; transition: background var(--transition);"></div>
                   </div>
-                  <span style="font-size: 11px; font-weight: 600; color: var(--text);">Tambah</span>
-                </div>
-                
-                <div class="card" onclick="setPage('pengaturan')" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; cursor: pointer; text-align: center; border: 1px solid var(--border); transition: all var(--transition); background: var(--bg2); padding: 12px; border-radius: var(--radius-md);">
-                  <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.05); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--text2);">
-                    <i class="ti ti-settings" style="font-size: 16px;"></i>
+                  <div style="position: absolute; right: 0; top: -16px; width: 16px; height: 16px; background: var(--gold); pointer-events: none;">
+                    <div style="width: 100%; height: 100%; background: var(--bg); border-bottom-right-radius: 16px; transition: background var(--transition);"></div>
                   </div>
-                  <span style="font-size: 11px; font-weight: 600; color: var(--text2);">Bot Notif</span>
+
+                  <!-- Add Money Button inside Cut-out -->
+                  <button onclick="openAddIncomeModal()" style="width: 120px; height: 40px; border-radius: 12px; background: #000000; color: #ffffff; border: 1px solid rgba(255,255,255,0.08); font-family: var(--ff); font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: all var(--transition);">
+                    <i class="ti ti-plus" style="font-size: 13px; color: var(--gold);"></i> Add money
+                  </button>
                 </div>
               </div>
             </div>
@@ -1227,6 +1226,13 @@ function openModal() {
   document.getElementById('inp-amount').value = '';
   setType(state.type || 'expense');
   document.getElementById('modal-overlay').classList.add('open');
+}
+
+function openAddIncomeModal() {
+  openModal();
+  setType('income');
+  const title = document.querySelector('.modal-title');
+  if (title) title.textContent = "Tambah Penghasilan 💰";
 }
 
 function editTransaction(id) {
