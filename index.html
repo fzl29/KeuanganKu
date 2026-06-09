@@ -1898,7 +1898,13 @@ function renderBudgetPage() {
         <div style="height: 250px; position: relative; width: 100%; display: flex; align-items: center; justify-content: center;">
           <canvas id="budget-category-chart"></canvas>
         </div>
-        <div id="budget-chart-legend" style="display: flex; flex-direction: column; gap: 6px; font-size: 11px; margin-top: 8px;"></div>
+        <!-- Toggle button for legend details -->
+        <div style="display:flex; justify-content:center; align-items:center; border-top:0.5px solid var(--border); padding-top:8px; margin-top:8px;">
+          <button onclick="toggleBudgetLegend(this)" style="background:none; border:none; color:var(--text2); font-size:11px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:4px; padding:6px 12px; border-radius:4px; transition:all var(--transition); width:100%; justify-content:center; background:rgba(255,255,255,0.02);">
+            <span>Lihat Rincian Kategori</span> <i class="ti ti-chevron-down" style="transition:transform 0.2s;"></i>
+          </button>
+        </div>
+        <div id="budget-chart-legend" style="display: none; flex-direction: column; gap: 6px; font-size: 11px; margin-top: 8px; max-height: 200px; overflow-y: auto; padding-right: 4px;"></div>
       </div>
 
       <!-- Kanan: Tambah Kategori Baru (20%) -->
@@ -2099,6 +2105,20 @@ function toggleCategoryTxns(btn) {
     const hasTxns = container.querySelector('span') !== null;
     const count = container.children.length;
     btn.querySelector('span').textContent = `Lihat Transaksi (${count})`;
+    icon.style.transform = 'rotate(0deg)';
+  }
+}
+
+function toggleBudgetLegend(btn) {
+  const container = document.getElementById('budget-chart-legend');
+  const icon = btn.querySelector('i');
+  if (container.style.display === 'none' || container.style.display === '') {
+    container.style.display = 'flex';
+    btn.querySelector('span').textContent = 'Sembunyikan Rincian Kategori';
+    icon.style.transform = 'rotate(180deg)';
+  } else {
+    container.style.display = 'none';
+    btn.querySelector('span').textContent = 'Lihat Rincian Kategori';
     icon.style.transform = 'rotate(0deg)';
   }
 }
