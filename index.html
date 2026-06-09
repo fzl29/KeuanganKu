@@ -2636,14 +2636,19 @@ function renderStatistikPage() {
     
     const ctx = doughnutEl.getContext('2d');
     
-    const colorPalette = [
-      '#FFC53E',
-      'rgba(255, 197, 62, 0.7)',
-      'rgba(255, 197, 62, 0.4)',
-      '#FFE194',
-      '#8D6E63',
-      '#5D4037'
-    ];
+    const clsColors = {
+      food: '#FFC53E',
+      salary: '#4ADE80',
+      shop: '#FF5C5C',
+      transport: '#60A5FA',
+      health: '#A78BFA'
+    };
+
+    const backgroundColors = labels.map(label => {
+      if (label === 'Belum Ada Data') return '#a1a1aa'; // default gray for no data placeholder
+      const iconData = state.catIcons[label] || { cls: 'food' };
+      return clsColors[iconData.cls] || '#FFC53E';
+    });
 
     categoryDoughnutChart = new Chart(ctx, {
       type: 'doughnut',
@@ -2651,7 +2656,7 @@ function renderStatistikPage() {
         labels: labels,
         datasets: [{
           data: data,
-          backgroundColor: colorPalette.slice(0, labels.length),
+          backgroundColor: backgroundColors,
           borderWidth: 1,
           borderColor: isLight ? '#fff' : '#1e1e24'
         }]
@@ -2671,6 +2676,7 @@ function renderStatistikPage() {
             callbacks: {
               label: function(context) {
                 const val = context.raw;
+                if (labels[0] === 'Belum Ada Data') return 'Belum Ada Data';
                 const pct = Math.round((val / totalExp) * 100);
                 return `${context.label}: ${rp(val)} (${pct}%)`;
               }
@@ -2684,7 +2690,8 @@ function renderStatistikPage() {
     const legendEl = document.getElementById('doughnut-legend');
     if (legendEl) {
       legendEl.innerHTML = labels.map((label, idx) => {
-        const color = colorPalette[idx % colorPalette.length];
+        const iconData = state.catIcons[label] || { cls: 'food' };
+        const color = label === 'Belum Ada Data' ? '#a1a1aa' : (clsColors[iconData.cls] || '#FFC53E');
         return `
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <div style="display: flex; align-items: center; gap: 8px;">
