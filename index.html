@@ -1139,6 +1139,8 @@ function toggleTheme() {
     renderChart();
   } else if (currentPage === 'statistik') {
     renderStatistikPage();
+  } else if (currentPage === 'anggaran') {
+    renderBudgetPage();
   }
 }
 
@@ -1913,12 +1915,12 @@ function renderBudgetPage() {
   content.innerHTML = `
     <div class="card" style="margin-top: 0; max-width: 540px; display: flex; flex-direction: column; gap: 16px;">
       <div class="card-header" style="margin-bottom: 0;">
-        <div class="card-title">Kelola Anggaran Bulanan 📊</div>
+        <div class="card-title">Diagram Kategori Pengeluaran 📊</div>
       </div>
-      <div style="display: flex; flex-direction: column; gap: 14px;">
-        ${budgetRows}
+      <div style="height: 220px; position: relative; width: 100%; display: flex; align-items: center; justify-content: center;">
+        <canvas id="budget-category-chart"></canvas>
       </div>
-      <div style="margin-top: 6px; font-size: 11px; color: var(--text3);">💡 Ubah batas pengeluaran kategori bulanan Anda secara instan menggunakan ikon edit.</div>
+      <div id="budget-chart-legend" style="display: flex; flex-direction: column; gap: 6px; font-size: 11px; margin-top: 8px;"></div>
     </div>
 
     <div style="margin-top: 32px;">
@@ -1928,6 +1930,110 @@ function renderBudgetPage() {
       ${addCatHtml}
     </div>
   `;
+  renderBudgetCategoryChart();
+}
+
+function renderBudgetCategoryChart() {
+  const selectedMonth = state.selectedMonth !== undefined ? state.selectedMonth : new Date().getMonth();
+  const selectedYear = state.selectedYear !== undefined ? state.selectedYear : new Date().getFullYear();
+  const isLight = !state.dark;
+
+  const chartEl = document.getElementById('budget-category-chart');
+  if (!chartEl) return;
+
+  const catTotals = {};
+  state.transactions.filter(t => {
+    if (!t.date || t.type !== 'expense') return false;
+    const d = new Date(t.date);
+    return d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
+  }).forEach(t => {
+    const c = (t.cat || 'Lainnya').trim();
+    catTotals[c] = (catTotals[c] || 0) + Number(t.amount);
+  });
+
+  let labels = Object.keys(catTotals);
+  let data = Object.values(catTotals);
+
+  if (labels.length === 0) {
+    labels = ['Belum Ada Pengeluaran'];
+    data = [1];
+  }
+
+  const totalExp = data.reduce((sum, val) => sum + val, 0);
+  const percentages = data.map(val => totalExp > 0 ? Math.round((val / totalExp) * 100) : 0);
+
+  if (budgetCategoryChart) {
+    budgetCategoryChart.destroy();
+  }
+
+  const ctx = chartEl.getContext('2d');
+  const colorPalette = [
+    '#FFC53E',
+    '#E0A31B',
+    '#FFE194',
+    '#B58010',
+    '#FFF0C2',
+    '#8C6203',
+    '#FFD275',
+    '#6E4B00'
+  ];
+
+  budgetCategoryChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: data,
+        backgroundColor: colorPalette.slice(0, labels.length),
+        borderWidth: 1,
+        borderColor: isLight ? '#fff' : '#1e1e24'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(22, 22, 26, 0.9)',
+          titleFont: { family: 'Plus Jakarta Sans', weight: '700' },
+          bodyFont: { family: 'Plus Jakarta Sans' },
+          borderColor: 'rgba(255, 197, 62, 0.2)',
+          borderWidth: 1,
+          padding: 8,
+          callbacks: {
+            label: function(context) {
+              const val = context.raw;
+              if (labels[0] === 'Belum Ada Pengeluaran') return 'Belum Ada Pengeluaran';
+              const pct = Math.round((val / totalExp) * 100);
+              return `${context.label}: ${rp(val)} (${pct}%)`;
+            }
+          }
+        }
+      },
+      cutout: '70%'
+    }
+  });
+
+  const legendEl = document.getElementById('budget-chart-legend');
+  if (legendEl) {
+    if (labels[0] === 'Belum Ada Pengeluaran') {
+      legendEl.innerHTML = `<div style="text-align: center; color: var(--text3); font-size: 11px; padding: 10px 0;">Belum ada data pengeluaran pada bulan ini.</div>`;
+    } else {
+      legendEl.innerHTML = labels.map((label, idx) => {
+        const color = colorPalette[idx % colorPalette.length];
+        return `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.02);">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div style="width: 8px; height: 8px; border-radius: 50%; background: ${color};"></div>
+              <span style="color: var(--text); font-weight: 500;">${label}</span>
+            </div>
+            <span style="color: var(--text2); font-weight: 600;">${percentages[idx]}% (${rp(data[idx])})</span>
+          </div>
+        `;
+      }).join('');
+    }
+  }
 }
 
 function toggleCategoryTxns(btn) {
@@ -2289,6 +2395,7 @@ function addNewSavingGoalFromTab() {
 
 let cashflowLineChart = null;
 let categoryDoughnutChart = null;
+let budgetCategoryChart = null;
 
 function renderStatistikPage() {
   const content = document.getElementById('view-statistik');
