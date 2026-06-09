@@ -152,13 +152,27 @@ Penting: 'amount' HANYA BERUPA ANGKA POSITIF (tanpa titik, koma, atau Rp). 'desc
         const currentState = data.state_data
         if (!currentState.transactions) currentState.transactions = []
 
+        let category = 'Lain-lain'
+        const lowerNama = nama.toLowerCase()
+        if (lowerNama.includes('makan') || lowerNama.includes('minum') || lowerNama.includes('kopi') || lowerNama.includes('resto') || lowerNama.includes('jajan')) {
+          category = 'Makanan & Minuman'
+        } else if (lowerNama.includes('transport') || lowerNama.includes('bensin') || lowerNama.includes('gojek') || lowerNama.includes('grab') || lowerNama.includes('parkir') || lowerNama.includes('tol')) {
+          category = 'Transportasi'
+        } else if (lowerNama.includes('belanja') || lowerNama.includes('indomaret') || lowerNama.includes('alfamart') || lowerNama.includes('shopee') || lowerNama.includes('tokopedia')) {
+          category = 'Belanja'
+        } else if (lowerNama.includes('sehat') || lowerNama.includes('obat') || lowerNama.includes('dokter') || lowerNama.includes('rs') || lowerNama.includes('apotek')) {
+          category = 'Kesehatan'
+        } else if (lowerNama.includes('game') || lowerNama.includes('nonton') || lowerNama.includes('hibur') || lowerNama.includes('film') || lowerNama.includes('bioskop')) {
+          category = 'Hiburan'
+        }
+
         currentState.transactions.unshift({
           id: 'tx-ai-' + Date.now(),
           type,
           amount,
           nama,
           keterangan,
-          cat: 'Lain-lain',
+          cat: category,
           date: new Date().toISOString()
         })
 
