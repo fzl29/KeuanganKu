@@ -1959,7 +1959,17 @@ function renderBudgetCategoryChart() {
   const chartEl = document.getElementById('budget-category-chart');
   if (!chartEl) return;
 
+  const allCats = new Set([
+    ...Object.keys(state.catIcons),
+    ...state.transactions.map(t => (t.cat || 'Lainnya').trim())
+  ]);
+  const categories = Array.from(allCats);
+
   const catTotals = {};
+  categories.forEach(cat => {
+    catTotals[cat] = 0;
+  });
+
   state.transactions.filter(t => {
     if (!t.date || t.type !== 'expense') return false;
     const d = new Date(t.date);
@@ -1971,11 +1981,6 @@ function renderBudgetCategoryChart() {
 
   let labels = Object.keys(catTotals);
   let data = Object.values(catTotals);
-
-  if (labels.length === 0) {
-    labels = ['Belum Ada Pengeluaran'];
-    data = [1];
-  }
 
   const totalExp = data.reduce((sum, val) => sum + val, 0);
   const percentages = data.map(val => totalExp > 0 ? Math.round((val / totalExp) * 100) : 0);
@@ -1998,6 +2003,8 @@ function renderBudgetCategoryChart() {
     '#6E4B00'
   ];
 
+  const backgroundColors = labels.map((_, idx) => colorPalette[idx % colorPalette.length]);
+
   budgetCategoryChart = new Chart(ctx, {
     type: 'bar',
     data: {
@@ -2005,7 +2012,7 @@ function renderBudgetCategoryChart() {
       datasets: [{
         label: 'Pengeluaran',
         data: data,
-        backgroundColor: colorPalette.slice(0, labels.length),
+        backgroundColor: backgroundColors,
         borderRadius: 6,
         borderWidth: 0
       }]
