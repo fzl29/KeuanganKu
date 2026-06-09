@@ -867,13 +867,9 @@
 
                 <!-- Cut-out at bottom right for Add Money -->
                 <div class="card-cutout" style="position: absolute; bottom: 0; right: 0; width: 140px; height: 56px; background: var(--bg); border-top-left-radius: 20px; display: flex; align-items: center; justify-content: center; transition: background var(--transition), border-color var(--transition);">
-                  <!-- Concave corner fillers (smooth rounding of the cut-out edges) -->
-                  <div style="position: absolute; left: -16px; bottom: 0; width: 16px; height: 16px; background: var(--gold); pointer-events: none;">
-                    <div style="width: 100%; height: 100%; background: var(--bg); border-bottom-right-radius: 16px; transition: background var(--transition);"></div>
-                  </div>
-                  <div style="position: absolute; right: 0; top: -16px; width: 16px; height: 16px; background: var(--gold); pointer-events: none;">
-                    <div style="width: 100%; height: 100%; background: var(--bg); border-bottom-right-radius: 16px; transition: background var(--transition);"></div>
-                  </div>
+                  <!-- Concave corner fillers (smooth rounding of the cut-out edges using CSS radial-gradients) -->
+                  <div style="position: absolute; left: -16px; bottom: 0; width: 16px; height: 16px; background: radial-gradient(circle at bottom left, transparent 16px, var(--gold) 16px); pointer-events: none;"></div>
+                  <div style="position: absolute; right: 0; top: -16px; width: 16px; height: 16px; background: radial-gradient(circle at top right, transparent 16px, var(--gold) 16px); pointer-events: none;"></div>
 
                   <!-- Add Money Button inside Cut-out -->
                   <button onclick="openAddIncomeModal()" style="width: 120px; height: 40px; border-radius: 12px; background: #000000; color: #ffffff; border: 1px solid rgba(255,255,255,0.08); font-family: var(--ff); font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: all var(--transition);">
