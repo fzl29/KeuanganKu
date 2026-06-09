@@ -1337,9 +1337,9 @@ function renderDashboard() {
   // Update ATM Card
   document.getElementById('stat-saldo').textContent = rp(s.saldo);
   const saldoDesc = document.getElementById('saldo-desc');
-  if (s.saldo > 0) { saldoDesc.style.color = 'var(--success)'; saldoDesc.textContent = '↑ Surplus bulan ini'; }
-  else if (s.saldo < 0) { saldoDesc.style.color = 'var(--danger)'; saldoDesc.textContent = '↓ Defisit bulan ini'; }
-  else { saldoDesc.style.color = 'var(--text2)'; saldoDesc.textContent = '— Seimbang'; }
+  if (s.saldo > 0) { saldoDesc.style.color = '#065f46'; saldoDesc.textContent = '↑ Surplus bulan ini'; }
+  else if (s.saldo < 0) { saldoDesc.style.color = '#991b1b'; saldoDesc.textContent = '↓ Defisit bulan ini'; }
+  else { saldoDesc.style.color = '#374151'; saldoDesc.textContent = '— Seimbang'; }
   
   // Update Right Panel Horizontal Cards
   document.getElementById('stat-income').textContent = rp(s.income);
