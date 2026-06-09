@@ -1873,61 +1873,79 @@ function renderBudgetPage() {
   });
   katHtml += `</div>`;
 
-  let addCatHtml = `
-    <div class="card" style="margin-top: 24px;">
-      <div class="card-header"><div class="card-title">Tambah Kategori Baru</div></div>
-      <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
-        <div style="flex:1;min-width:200px;">
-          <label class="form-label" for="new-cat-name">Nama Kategori</label>
-          <input class="form-input" type="text" id="new-cat-name" placeholder="cth: Pendidikan, Pajak..."/>
-        </div>
-        <div style="width:180px;">
-          <label class="form-label" for="new-cat-icon">Icon Tabler</label>
-          <select class="form-input" id="new-cat-icon">
-            <option value="ti-book">ti-book (Buku)</option>
-            <option value="ti-car">ti-car (Mobil)</option>
-            <option value="ti-device-gamepad-2">ti-device-gamepad-2 (Gamepad)</option>
-            <option value="ti-dots">ti-dots (Lainnya)</option>
-            <option value="ti-heart">ti-heart (Kesehatan)</option>
-            <option value="ti-home">ti-home (Rumah)</option>
-            <option value="ti-cash">ti-cash (Uang)</option>
-            <option value="ti-shopping-bag">ti-shopping-bag (Belanja)</option>
-            <option value="ti-soup">ti-soup (Makanan)</option>
-          </select>
-        </div>
-        <div style="width:140px;">
-          <label class="form-label" for="new-cat-color">Gaya Warna</label>
-          <select class="form-input" id="new-cat-color">
-            <option value="food">Emas/Kuning</option>
-            <option value="salary">Hijau</option>
-            <option value="shop">Merah</option>
-            <option value="transport">Biru</option>
-            <option value="health">Ungu</option>
-          </select>
-        </div>
-        <button class="btn-add" style="height:38px;padding:0 20px;" onclick="addNewCategory()">
-          <i class="ti ti-plus" aria-hidden="true"></i> Tambah
-        </button>
-      </div>
-    </div>
-  `;
-
   content.innerHTML = `
-    <div class="card" style="margin-top: 0; max-width: 540px; display: flex; flex-direction: column; gap: 16px;">
-      <div class="card-header" style="margin-bottom: 0;">
-        <div class="card-title">Diagram Kategori Pengeluaran 📊</div>
+    <style>
+      .budget-top-layout {
+        display: grid;
+        grid-template-columns: 8fr 2fr;
+        gap: 20px;
+        align-items: start;
+        width: 100%;
+      }
+      @media (max-width: 768px) {
+        .budget-top-layout {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+
+    <div class="budget-top-layout" style="margin-top: 0;">
+      <!-- Kiri: Diagram Kategori Pengeluaran (80%) -->
+      <div class="card" style="margin: 0; display: flex; flex-direction: column; gap: 16px; min-width: 0;">
+        <div class="card-header" style="margin-bottom: 0;">
+          <div class="card-title">Diagram Kategori Pengeluaran 📊</div>
+        </div>
+        <div style="height: 250px; position: relative; width: 100%; display: flex; align-items: center; justify-content: center;">
+          <canvas id="budget-category-chart"></canvas>
+        </div>
+        <div id="budget-chart-legend" style="display: flex; flex-direction: column; gap: 6px; font-size: 11px; margin-top: 8px;"></div>
       </div>
-      <div style="height: 220px; position: relative; width: 100%; display: flex; align-items: center; justify-content: center;">
-        <canvas id="budget-category-chart"></canvas>
+
+      <!-- Kanan: Tambah Kategori Baru (20%) -->
+      <div class="card" style="margin: 0; display: flex; flex-direction: column; gap: 16px; min-width: 0;">
+        <div class="card-header" style="margin-bottom: 0;">
+          <div class="card-title" style="font-size: 14px; font-weight: 700;">Tambah Kategori</div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <label class="form-label" for="new-cat-name" style="font-size: 10px; text-transform: uppercase;">Nama Kategori</label>
+            <input class="form-input" style="width: 100%; box-sizing: border-box;" type="text" id="new-cat-name" placeholder="cth: Pendidikan..."/>
+          </div>
+          <div>
+            <label class="form-label" for="new-cat-icon" style="font-size: 10px; text-transform: uppercase;">Icon Tabler</label>
+            <select class="form-input" style="width: 100%; box-sizing: border-box;" id="new-cat-icon">
+              <option value="ti-book">ti-book (Buku)</option>
+              <option value="ti-car">ti-car (Mobil)</option>
+              <option value="ti-device-gamepad-2">ti-device-gamepad-2 (Gamepad)</option>
+              <option value="ti-dots">ti-dots (Lainnya)</option>
+              <option value="ti-heart">ti-heart (Kesehatan)</option>
+              <option value="ti-home">ti-home (Rumah)</option>
+              <option value="ti-cash">ti-cash (Uang)</option>
+              <option value="ti-shopping-bag">ti-shopping-bag (Belanja)</option>
+              <option value="ti-soup">ti-soup (Makanan)</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label" for="new-cat-color" style="font-size: 10px; text-transform: uppercase;">Gaya Warna</label>
+            <select class="form-input" style="width: 100%; box-sizing: border-box;" id="new-cat-color">
+              <option value="food">Emas/Kuning</option>
+              <option value="salary">Hijau</option>
+              <option value="shop">Merah</option>
+              <option value="transport">Biru</option>
+              <option value="health">Ungu</option>
+            </select>
+          </div>
+          <button class="btn-add" style="width: 100%; height: 38px; margin-top: 4px; display: flex; align-items: center; justify-content: center; gap: 6px;" onclick="addNewCategory()">
+            <i class="ti ti-plus" aria-hidden="true"></i> Tambah
+          </button>
+        </div>
       </div>
-      <div id="budget-chart-legend" style="display: flex; flex-direction: column; gap: 6px; font-size: 11px; margin-top: 8px;"></div>
     </div>
 
     <div style="margin-top: 32px;">
       <h3 style="font-size: 18px; margin-bottom: 8px;">Daftar Kategori (${categories.length})</h3>
       <p style="font-size: 13px; color: var(--text2); margin-bottom: 0;">Rincian total perputaran uang berdasarkan kategori transaksi.</p>
       ${katHtml}
-      ${addCatHtml}
     </div>
   `;
   renderBudgetCategoryChart();
