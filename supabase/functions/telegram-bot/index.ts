@@ -64,7 +64,23 @@ serve(async (req) => {
 
       await reply('Sedang membaca struk menggunakan AI... 🤖 Mohon tunggu sebentar.')
 
-      // 1. Get File Path from Telegram
+      // 1. Ambil data Cloud terlebih dahulu untuk mendapatkan daftar kategori
+      const { data: cloudData, error: fetchError } = await supabase
+        .from('keuanganku_sync')
+        .select('state_data')
+        .eq('sync_code', syncCode)
+        .maybeSingle()
+
+      if (fetchError || !cloudData || !cloudData.state_data) {
+        await reply(`❌ Gagal mengambil data Cloud.`)
+        return new Response('OK')
+      }
+
+      const currentState = cloudData.state_data
+      const catList = Object.keys(currentState.catIcons || {}).filter(k => k !== 'Gaji' && k !== 'Investasi')
+      const catListStr = catList.length > 0 ? catList.join(', ') : 'Makanan & Minuman, Transportasi, Belanja, Kesehatan, Hiburan, Lainnya'
+
+      // 2. Get File Path from Telegram
       const fileRes = await fetch(`https://api.telegram.org/bot${botToken}/getFile?file_id=${fileId}`)
       const fileData = await fileRes.json()
       if (!fileData.ok) {
@@ -73,7 +89,7 @@ serve(async (req) => {
       }
       const filePath = fileData.result.file_path
 
-      // 2. Download Image
+      // 3. Download Image
       const imgRes = await fetch(`https://api.telegram.org/file/bot${botToken}/${filePath}`)
       const imgBlob = await imgRes.blob()
       
@@ -85,7 +101,7 @@ serve(async (req) => {
       }
       const base64String = btoa(binary)
 
-      // 3. Send to Gemini
+      // 4. Send to Gemini
       const geminiApiKey = Deno.env.get('GEMINI_API_KEY')
       if (!geminiApiKey) {
         await reply('❌ API Key Gemini belum dikonfigurasi di server rahasia.')
@@ -93,10 +109,10 @@ serve(async (req) => {
       }
 
       const prompt = `Anda adalah asisten keuangan pintar. Baca struk belanja ini.
-Temukan Total Harga Belanja dan Nama Toko/Restoran/Merchant.
+Temukan Total Harga Belanja, Nama Toko/Restoran/Merchant, dan tentukan kategori transaksi yang paling cocok dari daftar kategori berikut: [${catListStr}].
 Keluarkan HANYA dalam format JSON murni berikut (tanpa blok markdown atau teks tambahan apapun):
-{ "amount": 150000, "desc": "Belanja di Indomaret" }
-Penting: 'amount' HANYA BERUPA ANGKA POSITIF (tanpa titik, koma, atau Rp). 'desc' adalah kalimat singkat nama tempatnya.`
+{ "amount": 150000, "desc": "Belanja di Indomaret", "category": "Belanja" }
+Penting: 'amount' HANYA BERUPA ANGKA POSITIF (tanpa titik, koma, atau Rp). 'desc' adalah kalimat singkat nama tempatnya. 'category' HARUS sama persis dengan salah satu nama kategori dari daftar [${catListStr}] di atas. Jika tidak ada yang cocok sama sekali, pilih kategori default 'Lainnya' atau 'Lain-lain'.`
 
       let mimeType = imgBlob.type || 'image/jpeg'
       if (mimeType === 'application/octet-stream') {
@@ -137,33 +153,25 @@ Penting: 'amount' HANYA BERUPA ANGKA POSITIF (tanpa titik, koma, atau Rp). 'desc
         const keterangan = text || ''
         const type = 'expense'
 
-        // 4. Proses Transaksi
-        const { data, error: fetchError } = await supabase
-          .from('keuanganku_sync')
-          .select('state_data')
-          .eq('sync_code', syncCode)
-          .maybeSingle()
-
-        if (fetchError || !data || !data.state_data) {
-          await reply(`❌ Gagal mengambil data Cloud.`)
-          return new Response('OK')
-        }
-
-        const currentState = data.state_data
         if (!currentState.transactions) currentState.transactions = []
 
-        let category = 'Lain-lain'
-        const lowerNama = nama.toLowerCase()
-        if (lowerNama.includes('makan') || lowerNama.includes('minum') || lowerNama.includes('kopi') || lowerNama.includes('resto') || lowerNama.includes('jajan')) {
-          category = 'Makanan & Minuman'
-        } else if (lowerNama.includes('transport') || lowerNama.includes('bensin') || lowerNama.includes('gojek') || lowerNama.includes('grab') || lowerNama.includes('parkir') || lowerNama.includes('tol')) {
-          category = 'Transportasi'
-        } else if (lowerNama.includes('belanja') || lowerNama.includes('indomaret') || lowerNama.includes('alfamart') || lowerNama.includes('shopee') || lowerNama.includes('tokopedia')) {
-          category = 'Belanja'
-        } else if (lowerNama.includes('sehat') || lowerNama.includes('obat') || lowerNama.includes('dokter') || lowerNama.includes('rs') || lowerNama.includes('apotek')) {
-          category = 'Kesehatan'
-        } else if (lowerNama.includes('game') || lowerNama.includes('nonton') || lowerNama.includes('hibur') || lowerNama.includes('film') || lowerNama.includes('bioskop')) {
-          category = 'Hiburan'
+        // Tentukan kategori dari hasil AI, cocokkan dengan daftar kategori yang ada
+        let category = parsed.category ? String(parsed.category).trim() : 'Lainnya'
+        
+        // Cari pencocokan case-insensitive jika tidak cocok persis
+        const existingCats = Object.keys(currentState.catIcons || {})
+        const match = existingCats.find(c => c.toLowerCase() === category.toLowerCase())
+        if (match) {
+          category = match
+        } else {
+          // Fallback ke "Lainnya" atau "Lain-lain" atau kategori pertama yang ada
+          if (existingCats.includes('Lainnya')) {
+            category = 'Lainnya'
+          } else if (existingCats.includes('Lain-lain')) {
+            category = 'Lain-lain'
+          } else {
+            category = existingCats[0] || 'Lainnya'
+          }
         }
 
         currentState.transactions.unshift({
@@ -183,7 +191,7 @@ Penting: 'amount' HANYA BERUPA ANGKA POSITIF (tanpa titik, koma, atau Rp). 'desc
         if (upsertError) {
           await reply(`❌ Gagal menyimpan transaksi struk ke Cloud.`)
         } else {
-          await reply(`✅ <b>Struk Berhasil Dibaca AI!</b>\n\n🔴 Pengeluaran: <b>${rp(amount)}</b>\nKeterangan: <i>${nama}</i>\n\n<i>Tercatat otomatis ke Cloud.</i>`)
+          await reply(`✅ <b>Struk Berhasil Dibaca AI!</b>\n\n🔴 Pengeluaran: <b>${rp(amount)}</b>\nKeterangan: <i>${nama}</i>\nKategori: <b>${category}</b>\n\n<i>Tercatat otomatis ke Cloud.</i>`)
         }
       } catch (err) {
         await reply(`❌ Maaf, struk kurang jelas atau AI gagal menemukan total harga. Silakan input manual.\nError: ${err.message}`)
