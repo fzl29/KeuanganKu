@@ -247,6 +247,11 @@
   .txn-icon.shop { background: rgba(255,92,92,0.1); color: var(--danger); }
   .txn-icon.transport { background: rgba(96,165,250,0.1); color: #60A5FA; }
   .txn-icon.health { background: rgba(167,139,250,0.1); color: #A78BFA; }
+  .txn-icon.orange { background: rgba(251,146,60,0.12); color: #FB923C; }
+  .txn-icon.pink { background: rgba(244,114,182,0.12); color: #F472B6; }
+  .txn-icon.cyan { background: rgba(34,211,238,0.12); color: #22D3EE; }
+  .txn-icon.teal { background: rgba(45,212,191,0.12); color: #2DD4BF; }
+  .txn-icon.indigo { background: rgba(129,140,248,0.12); color: #818CF8; }
   .txn-meta { flex: 1; min-width: 0; }
   .txn-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .txn-cat { font-size: 11px; color: var(--text2); }
@@ -1932,6 +1937,17 @@ function renderBudgetPage() {
               <option value="ti-cash">ti-cash (Uang)</option>
               <option value="ti-shopping-bag">ti-shopping-bag (Belanja)</option>
               <option value="ti-soup">ti-soup (Makanan)</option>
+              <option value="ti-gift">ti-gift (Hadiah)</option>
+              <option value="ti-coffee">ti-coffee (Kopi/Kafe)</option>
+              <option value="ti-device-laptop">ti-device-laptop (Elektronik)</option>
+              <option value="ti-shirt">ti-shirt (Pakaian)</option>
+              <option value="ti-movie">ti-movie (Hiburan)</option>
+              <option value="ti-users">ti-users (Sosial/Keluarga)</option>
+              <option value="ti-credit-card">ti-credit-card (Pembayaran)</option>
+              <option value="ti-school">ti-school (Pendidikan)</option>
+              <option value="ti-dog">ti-dog (Hewan Peliharaan)</option>
+              <option value="ti-barbell">ti-barbell (Olahraga)</option>
+              <option value="ti-plane">ti-plane (Travel)</option>
             </select>
           </div>
           <div>
@@ -1942,6 +1958,11 @@ function renderBudgetPage() {
               <option value="shop">Merah</option>
               <option value="transport">Biru</option>
               <option value="health">Ungu</option>
+              <option value="orange">Oranye</option>
+              <option value="pink">Merah Muda (Pink)</option>
+              <option value="cyan">Sian (Cyan)</option>
+              <option value="teal">Hijau Toska (Teal)</option>
+              <option value="indigo">Nila (Indigo)</option>
             </select>
           </div>
           <button class="btn-add" style="width: 100%; height: 38px; margin-top: 4px; display: flex; align-items: center; justify-content: center; gap: 6px;" onclick="addNewCategory()">
@@ -2006,7 +2027,12 @@ function renderBudgetCategoryChart() {
     salary: '#4ADE80',
     shop: '#FF5C5C',
     transport: '#60A5FA',
-    health: '#A78BFA'
+    health: '#A78BFA',
+    orange: '#FB923C',
+    pink: '#F472B6',
+    cyan: '#22D3EE',
+    teal: '#2DD4BF',
+    indigo: '#818CF8'
   };
 
   const backgroundColors = labels.map(label => {
@@ -2641,7 +2667,12 @@ function renderStatistikPage() {
       salary: '#4ADE80',
       shop: '#FF5C5C',
       transport: '#60A5FA',
-      health: '#A78BFA'
+      health: '#A78BFA',
+      orange: '#FB923C',
+      pink: '#F472B6',
+      cyan: '#22D3EE',
+      teal: '#2DD4BF',
+      indigo: '#818CF8'
     };
 
     const backgroundColors = labels.map(label => {
