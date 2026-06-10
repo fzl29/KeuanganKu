@@ -1288,6 +1288,10 @@ function saveTransaction() {
   }
   saveState();
 
+  if (actualType === 'expense') {
+    checkBudgetLimit(cat);
+  }
+
   // Send real-time Telegram Bot notification if enabled
   if (state.telegram && state.telegram.enabled && state.telegram.token && state.telegram.chatId) {
     const typeLabel = actualType === 'income' ? '🟢 <b>Pemasukan Baru</b>' : '🔴 <b>Pengeluaran Baru</b>';
@@ -1302,6 +1306,51 @@ function saveTransaction() {
 
   closeModal();
   setPage(currentPage);
+}
+
+function checkBudgetLimit(cat) {
+  const budget = state.budgets[cat];
+  if (!budget || !budget.limit) return;
+
+  const limit = Number(budget.limit);
+  const currentMonth = new Date().getMonth();
+  const currentYear = new Date().getFullYear();
+
+  let totalExpense = 0;
+  state.transactions.forEach(t => {
+    if (t.type === 'expense' && t.cat === cat && t.date) {
+      const d = new Date(t.date);
+      if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
+        totalExpense += Number(t.amount);
+      }
+    }
+  });
+
+  if (totalExpense > limit) {
+    showNotification(`🚨 Pengeluaran Kategori "${cat}" MELEBIHI BATAS LIMIT! (${rp(totalExpense)} / Limit: ${rp(limit)})`, 'error');
+    
+    // Kirim notifikasi Telegram jika diaktifkan
+    if (state.telegram && state.telegram.enabled && state.telegram.token && state.telegram.chatId) {
+      const alertMsg = `🚨 <b>Peringatan Anggaran Overlimit!</b>\n\n` +
+                       `Kategori: <b>${cat}</b>\n` +
+                       `Pengeluaran Bulan Ini: <b>${rp(totalExpense)}</b>\n` +
+                       `Batas Limit: <b>${rp(limit)}</b>\n\n` +
+                       `<i>Harap batasi pengeluaran Anda! 🛑</i>`;
+      sendTelegramMessage(alertMsg);
+    }
+  } else if (totalExpense >= limit * 0.8) {
+    showNotification(`⚠️ Pengeluaran Kategori "${cat}" mendekati limit (Telah terpakai ${Math.round(totalExpense/limit*100)}%): ${rp(totalExpense)} / ${rp(limit)}`, 'warning');
+    
+    // Kirim notifikasi Telegram jika diaktifkan
+    if (state.telegram && state.telegram.enabled && state.telegram.token && state.telegram.chatId) {
+      const alertMsg = `⚠️ <b>Peringatan Anggaran Boros (80%+)!</b>\n\n` +
+                       `Kategori: <b>${cat}</b>\n` +
+                       `Pengeluaran Bulan Ini: <b>${rp(totalExpense)}</b>\n` +
+                       `Batas Limit: <b>${rp(limit)}</b>\n\n` +
+                       `<i>Mulai batasi belanja di kategori ini ya! ⚠️</i>`;
+      sendTelegramMessage(alertMsg);
+    }
+  }
 }
 
 function getStats() {
@@ -3350,13 +3399,27 @@ function saveSupabaseSettings() {
 
 function showNotification(msg, type = 'success') {
   const toast = document.createElement('div');
+  let borderColor = 'rgba(255, 92, 92, 0.25)';
+  let color = 'var(--danger)';
+  let iconClass = 'ti ti-alert-triangle';
+  
+  if (type === 'success') {
+    borderColor = 'rgba(74, 222, 128, 0.25)';
+    color = 'var(--success)';
+    iconClass = 'ti ti-circle-check';
+  } else if (type === 'warning') {
+    borderColor = 'rgba(251, 146, 60, 0.25)';
+    color = '#FB923C';
+    iconClass = 'ti ti-alert-triangle';
+  }
+  
   toast.style.cssText = `
     position: fixed; top: 24px; right: 24px; z-index: 99999;
     padding: 14px 20px; border-radius: var(--radius-sm);
     background: rgba(30,30,30,0.85); backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid ${type === 'success' ? 'rgba(74, 222, 128, 0.25)' : 'rgba(255, 92, 92, 0.25)'};
-    color: ${type === 'success' ? 'var(--success)' : 'var(--danger)'};
+    border: 1px solid ${borderColor};
+    color: ${color};
     box-shadow: 0 10px 30px rgba(0,0,0,0.35);
     display: flex; align-items: center; gap: 10px;
     font-size: 13px; font-weight: 600;
@@ -3365,7 +3428,7 @@ function showNotification(msg, type = 'success') {
   `;
   
   const icon = document.createElement('i');
-  icon.className = type === 'success' ? 'ti ti-circle-check' : 'ti ti-alert-triangle';
+  icon.className = iconClass;
   icon.style.fontSize = '18px';
   
   const text = document.createElement('span');

@@ -57,6 +57,33 @@ serve(async (req) => {
     // Format Rupiah
     const rp = (num: number) => 'Rp ' + num.toLocaleString('id-ID')
 
+    // Check budget limit in telegram
+    const checkTelegramBudgetLimit = (currentState: any, category: string): string => {
+      const budget = currentState.budgets?.[category];
+      if (!budget || !budget.limit) return '';
+
+      const limit = Number(budget.limit);
+      const currentMonth = new Date().getMonth();
+      const currentYear = new Date().getFullYear();
+
+      let totalExpense = 0;
+      currentState.transactions.forEach((t: any) => {
+        if (t.type === 'expense' && t.cat === category && t.date) {
+          const d = new Date(t.date);
+          if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
+            totalExpense += Number(t.amount);
+          }
+        }
+      });
+
+      if (totalExpense > limit) {
+        return `\n\n🚨 <b>PERINGATAN: ANGGARAN OVER LIMIT!</b>\nKategori <b>${category}</b> telah melebihi batas limit! (Pengeluaran: <b>${rp(totalExpense)}</b> / Limit: <b>${rp(limit)}</b>) 🛑`;
+      } else if (totalExpense >= limit * 0.8) {
+        return `\n\n⚠️ <b>PERINGATAN: ANGGARAN MENDEKATI LIMIT (80%+)!</b>\nKategori <b>${category}</b> hampir habis! (Pengeluaran: <b>${rp(totalExpense)}</b> / Limit: <b>${rp(limit)}</b>)`;
+      }
+      return '';
+    }
+
     // Handle Photo (Struk)
     if (message.photo && message.photo.length > 0) {
       const photo = message.photo[message.photo.length - 1] // Ambil resolusi tertinggi
@@ -191,7 +218,8 @@ Penting: 'amount' HANYA BERUPA ANGKA POSITIF (tanpa titik, koma, atau Rp). 'desc
         if (upsertError) {
           await reply(`❌ Gagal menyimpan transaksi struk ke Cloud.`)
         } else {
-          await reply(`✅ <b>Struk Berhasil Dibaca AI!</b>\n\n🔴 Pengeluaran: <b>${rp(amount)}</b>\nKeterangan: <i>${nama}</i>\nKategori: <b>${category}</b>\n\n<i>Tercatat otomatis ke Cloud.</i>`)
+          const warning = checkTelegramBudgetLimit(currentState, category);
+          await reply(`✅ <b>Struk Berhasil Dibaca AI!</b>\n\n🔴 Pengeluaran: <b>${rp(amount)}</b>\nKeterangan: <i>${nama}</i>\nKategori: <b>${category}</b>${warning}\n\n<i>Tercatat otomatis ke Cloud.</i>`)
         }
       } catch (err) {
         await reply(`❌ Maaf, struk kurang jelas atau AI gagal menemukan total harga. Silakan input manual.\nError: ${err.message}`)
@@ -302,7 +330,8 @@ Penting: 'amount' HANYA BERUPA ANGKA POSITIF (tanpa titik, koma, atau Rp). 'desc
       if (upsertError) {
         await reply(`❌ Gagal menyimpan transaksi ke Cloud: ${upsertError.message}`)
       } else {
-        await reply(`✅ <b>Transaksi Berhasil Dicatat (Cloud Sync)!</b>\n\nJenis: ${type === 'income' ? '🟢 Pemasukan' : '🔴 Pengeluaran'}\nNominal: <b>${rp(amount)}</b>\nKeterangan: <i>${nama}</i>\n\n<i>Buka web KeuanganKu untuk melihat update secara real-time.</i>`)
+        const warning = type === 'expense' ? checkTelegramBudgetLimit(currentState, category) : '';
+        await reply(`✅ <b>Transaksi Berhasil Dicatat (Cloud Sync)!</b>\n\nJenis: ${type === 'income' ? '🟢 Pemasukan' : '🔴 Pengeluaran'}\nNominal: <b>${rp(amount)}</b>\nKeterangan: <i>${nama}</i>\nKategori: <b>${category}</b>${warning}\n\n<i>Buka web KeuanganKu untuk melihat update secara real-time.</i>`)
       }
       return new Response('OK')
     }
